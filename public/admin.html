@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | EduPortal</title>
+    <meta name="description" content="EduPortal Admin Dashboard — Manage PDFs, educational notes, marketplace, and ad settings.">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-w: 260px;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: rgba(99,102,241,0.12);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --bg-main: #0f172a;
+            --bg-sidebar: #1e293b;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --shadow: 0 4px 24px rgba(0,0,0,0.35);
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ===================== LOGIN SCREEN ===================== */
+        .login-overlay {
+            position: fixed; inset: 0;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-overlay::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: radial-gradient(circle at 20% 50%, rgba(99,102,241,0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(139,92,246,0.1) 0%, transparent 40%);
+        }
+        .login-card {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 48px 40px;
+            width: 420px;
+            box-shadow: var(--shadow), 0 0 60px rgba(99,102,241,0.2);
+        }
+        .login-card .login-logo {
+            width: 68px; height: 68px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+        }
+        .login-card h4 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+        .login-card p.subtitle { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 32px; }
+        .form-label { color: var(--text-muted); font-size: 13px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .form-control, .form-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            background: var(--bg-input);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+            color: var(--text-primary);
+            outline: none;
+        }
+        .form-control::placeholder { color: #475569; }
+        .form-select option { background: #1e293b; }
+        .btn-login {
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            border: none; color: white;
+            padding: 13px; border-radius: 10px;
+            font-weight: 700; font-size: 15px;
+            width: 100%; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+        }
+        .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.5); }
+        .btn-login:active { transform: translateY(0); }
+
+        /* ===================== LAYOUT ===================== */
+        #dashboardApp { display: flex; min-height: 100vh; }
+
+        /* ===================== SIDEBAR ===================== */
+        #sidebar {
+            width: var(--sidebar-w);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            position: fixed; top: 0; bottom: 0; left: 0;
+            display: flex; flex-direction: column;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .sidebar-logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: white;
+            flex-shrink: 0;
+        }
+        .sidebar-brand { font-size: 16px; font-weight: 700; line-height: 1.2; }
+        .sidebar-brand span { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); }
+
+        .nav-section-label {
+            font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+            color: #475569; text-transform: uppercase;
+            padding: 20px 20px 8px;
+        }
+        .nav-list { list-style: none; padding: 8px 12px; flex: 1; }
+        .nav-list li + li { margin-top: 2px; }
+        .nav-link-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 14px; border-radius: 10px;
+            color: var(--text-muted); font-size: 14px; font-weight: 500;
+            cursor: pointer; text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            border: none; background: none; width: 100%; text-align: left;
+        }
+        .nav-link-item i { font-size: 16px; width: 20px; text-align: center; }
+        .nav-link-item:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+        .nav-link-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .nav-link-item .badge-count {
+            margin-left: auto;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 11px; font-weight: 700;
+            padding: 2px 8px; border-radius: 20px;
+        }
+
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+        .admin-info { display: flex; align-items: center; gap: 12px; padding: 12px; }
+        .admin-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; color: white; font-weight: 700; flex-shrink: 0;
+        }
+        .admin-name { font-size: 13px; font-weight: 600; }
+        .admin-role { font-size: 11px; color: var(--text-muted); }
+        .btn-logout {
+            width: 100%;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: #f87171;
+            border-radius: 8px;
+            padding: 9px;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-logout:hover { background: rgba(239,68,68,0.2); }
+
+        /* ===================== MAIN CONTENT ===================== */
+        #main-content {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        /* ===================== PAGE HEADER ===================== */
+        .page-header {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .page-header h2 { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+        .page-header p { color: var(--text-muted); font-size: 14px; }
+
+        /* ===================== STAT CARDS ===================== */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px; }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            position: relative; overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .stat-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .stat-card.indigo::before { background: linear-gradient(90deg, var(--primary), #8b5cf6); }
+        .stat-card.green::before { background: linear-gradient(90deg, var(--success), #34d399); }
+        .stat-card.amber::before { background: linear-gradient(90deg, var(--warning), #fbbf24); }
+        .stat-card.blue::before { background: linear-gradient(90deg, var(--info), #60a5fa); }
+        .stat-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin-bottom: 16px;
+        }
+        .stat-card.indigo .stat-icon { background: rgba(99,102,241,0.15); color: var(--primary); }
+        .stat-card.green .stat-icon { background: rgba(16,185,129,0.15); color: var(--success); }
+        .stat-card.amber .stat-icon { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .stat-card.blue .stat-icon { background: rgba(59,130,246,0.15); color: var(--info); }
+        .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 6px; }
+        .stat-value { font-size: 32px; font-weight: 800; }
+
+        /* ===================== CONTENT CARDS ===================== */
+        .content-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .content-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 24px; border-bottom: 1px solid var(--border);
+        }
+        .content-card-header h5 { font-size: 16px; font-weight: 700; margin: 0; }
+        .content-card-body { padding: 24px; }
+
+        /* ===================== TABLE ===================== */
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table thead th {
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+            color: var(--text-muted); padding: 14px 16px; border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        .admin-table tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(51,65,85,0.5); font-size: 14px; vertical-align: middle; }
+        .admin-table tbody tr:last-child td { border-bottom: none; }
+        .admin-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
+        .admin-table a { color: var(--primary); text-decoration: none; }
+        .admin-table a:hover { text-decoration: underline; }
+
+        /* ===================== BADGES ===================== */
+        .badge-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 700;
+        }
+        .badge-pill.success { background: rgba(16,185,129,0.15); color: #34d399; }
+        .badge-pill.danger { background: rgba(239,68,68,0.15); color: #f87171; }
+        .badge-pill.warning { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .badge-pill.info { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .badge-pill.purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+        .badge-pill.gray { background: rgba(100,116,139,0.15); color: #94a3b8; }
+
+        /* ===================== ACTION BUTTONS ===================== */
+        .btn-action {
+            padding: 7px 10px; border-radius: 8px; border: none;
+            cursor: pointer; font-size: 13px;
+            transition: background 0.15s;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn-action.edit { background: rgba(99,102,241,0.15); color: #818cf8; }
+        .btn-action.edit:hover { background: rgba(99,102,241,0.3); }
+        .btn-action.delete { background: rgba(239,68,68,0.15); color: #f87171; }
+        .btn-action.delete:hover { background: rgba(239,68,68,0.3); }
+        .btn-action.view { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .btn-action.view:hover { background: rgba(59,130,246,0.3); }
+        .btn-action.success { background: rgba(16,185,129,0.15); color: #34d399; }
+        .btn-action.success:hover { background: rgba(16,185,129,0.3); }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            border: none; color: white;
+            padding: 10px 20px; border-radius: 10px;
+            font-weight: 600; font-size: 14px; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+        }
+        .btn-primary-custom:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(99,102,241,0.4); }
+
+        /* ===================== MODAL ===================== */
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            color: var(--text-primary);
+        }
+        .modal-header { border-bottom: 1px solid var(--border); padding: 20px 24px; }
+        .modal-header .modal-title { font-weight: 700; font-size: 18px; }
+        .modal-footer { border-top: 1px solid var(--border); padding: 16px 24px; }
+        .btn-close { filter: invert(1); }
+        .modal-body { padding: 24px; }
+
+        /* ===================== FORM ELEMENTS ===================== */
+        .form-section-title {
+            font-size: 13px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.8px;
+            margin-bottom: 16px; margin-top: 24px;
+        }
+        .form-section-title:first-child { margin-top: 0; }
+        textarea.form-control { resize: vertical; min-height: 90px; }
+        .input-group .form-control { border-radius: 0 10px 10px 0; }
+        .input-group-text {
+            background: var(--bg-input); border: 1px solid var(--border); border-right: none;
+            color: var(--text-muted); border-radius: 10px 0 0 10px;
+        }
+        
+        /* ===================== ALERT ===================== */
+        .alert-custom {
+            border-radius: 10px; padding: 12px 16px; font-size: 13px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .alert-custom.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #f87171; }
+        .alert-custom.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #34d399; }
+
+        /* ===================== SEARCH BAR ===================== */
+        .search-wrapper { position: relative; flex: 1; max-width: 340px; }
+        .search-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-input {
+            background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary);
+            border-radius: 10px; padding: 10px 14px 10px 40px; font-size: 14px; width: 100%;
+        }
+        .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .search-input::placeholder { color: #475569; }
+
+        /* ===================== TABS ===================== */
+        .tab-view { display: none; }
+        .tab-view.active { display: block; }
+
+        /* ===================== EMPTY STATE ===================== */
+        .empty-state { text-align: center; padding: 60px 20px; }
+        .empty-state i { font-size: 48px; color: #334155; margin-bottom: 16px; }
+        .empty-state h6 { color: var(--text-muted); font-size: 16px; margin-bottom: 8px; }
+        .empty-state p { color: #475569; font-size: 13px; }
+
+        /* ===================== LOADING ===================== */
+        .loading-row td { text-align: center; padding: 40px; color: var(--text-muted); }
+
+        /* ===================== GRADE SELECT ===================== */
+        .grade-select-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .grade-chip {
+            padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+            background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px; font-weight: 600;
+            transition: all 0.15s;
+        }
+        .grade-chip:hover, .grade-chip.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+        /* ===================== TOAST ===================== */
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast-item {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 14px 18px;
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+            min-width: 280px;
+        }
+        .toast-item.success { border-left: 4px solid var(--success); }
+        .toast-item.error { border-left: 4px solid var(--danger); }
+        .toast-item i { font-size: 18px; }
+        .toast-item.success i { color: var(--success); }
+        .toast-item.error i { color: var(--danger); }
+        .toast-item span { font-size: 14px; font-weight: 500; }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* ===================== RESPONSIVE ===================== */
+        @media (max-width: 768px) {
+            :root { --sidebar-w: 0px; }
+            #sidebar { transform: translateX(-260px); }
+            #main-content { margin-left: 0; padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- =================== LOGIN SCREEN =================== -->
+<div id="loginScreen" class="login-overlay">
+    <div class="login-card">
+        <div class="login-logo"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h4>EduAdmin Portal</h4>
+        <p class="subtitle">Sign in with your admin credentials</p>
+        <div id="loginError" class="alert-custom error mb-3" style="display:none;"></div>
+        <div class="mb-3">
+            <label class="form-label">USERNAME</label>
+            <input type="text" id="loginUser" class="form-control" placeholder="Enter username" autocomplete="username">
+        </div>
+        <div class="mb-4">
+            <label class="form-label">PASSWORD</label>
+            <input type="password" id="loginPass" class="form-control" placeholder="Enter password" autocomplete="current-password">
+        </div>
+        <button id="btnLogin" onclick="handleLogin()" class="btn-login">
+            <i class="fa-solid fa-right-to-bracket me-2"></i> Sign In
+        </button>
+    </div>
+</div>
+
+<!-- =================== DASHBOARD =================== -->
+<div id="dashboardApp" style="display:none; width:100%;">
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="sidebar-brand">EduAdmin Portal<span>Educational Management</span></div>
+        </div>
+
+        <div class="nav-section-label">Main</div>
+        <ul class="nav-list">
+            <li><button class="nav-link-item active" id="nav-overview" onclick="switchTab('overviewTab', this)">
+                <i class="fa-solid fa-chart-line"></i> Overview
+            </button></li>
+        </ul>
+
+        <div class="nav-section-label">Content</div>
+        <ul class="nav-list">
+            <li><button class="nav-link-item" id="nav-pdf" onclick="switchTab('pdfTab', this)">
+                <i class="fa-solid fa-file-pdf"></i> PDF & Notes
+                <span class="badge-count" id="navBadgePdf">0</span>
+            </button></li>
+            <li><button class="nav-link-item" id="nav-market" onclick="switchTab('marketTab', this)">
+                <i class="fa-solid fa-store"></i> Marketplace
+            </button></li>
+        </ul>
+
+        <div class="nav-section-label">Configuration</div>
+        <ul class="nav-list">
+            <li><button class="nav-link-item" id="nav-ads" onclick="switchTab('adsTab', this)">
+                <i class="fa-solid fa-rectangle-ad"></i> Monetag & Ads
+            </button></li>
+            <li><button class="nav-link-item" id="nav-settings" onclick="switchTab('settingsTab', this)">
+                <i class="fa-solid fa-gears"></i> Site Settings
+            </button></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="admin-info">
+                <div class="admin-avatar" id="adminAvatarLetter">A</div>
+                <div>
+                    <div class="admin-name" id="adminDisplayName">Admin</div>
+                    <div class="admin-role">Super Administrator</div>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="btn-logout mt-2">
+                <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main id="main-content">
+
+        <!-- ========== OVERVIEW TAB ========== -->
+        <div id="overviewTab" class="tab-view active">
+            <div class="page-header">
+                <div>
+                    <h2>Dashboard Overview</h2>
+                    <p>Welcome back, <span id="welcomeName">Admin</span> · <span id="currentDate"></span></p>
+                </div>
+                <button class="btn-primary-custom" onclick="switchTab('pdfTab', document.getElementById('nav-pdf'))">
+                    <i class="fa-solid fa-plus"></i> Add New PDF
+                </button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card indigo">
+                    <div class="stat-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                    <div class="stat-label">Total PDF Notes</div>
+                    <div class="stat-value" id="statPdfs">—</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon"><i class="fa-solid fa-download"></i></div>
+                    <div class="stat-label">Total Downloads</div>
+                    <div class="stat-value" id="statDownloads">—</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+                    <div class="stat-label">Marketplace Items</div>
+                    <div class="stat-value" id="statProducts">—</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-label">Registered Users</div>
+                    <div class="stat-value" id="statUsers">—</div>
+                </div>
+            </div>
+
+            <!-- Recent PDFs Table -->
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fa-solid fa-clock-rotate-left me-2 text-primary" style="color:var(--primary)"></i> Recently Added Materials</h5>
+                    <button class="btn-action view" onclick="switchTab('pdfTab', document.getElementById('nav-pdf'))">View All <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Subject / Category</th>
+                                <th>Grade</th>
+                                <th>Type</th>
+                                <th>Downloads</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentPdfBody">
+                            <tr class="loading-row"><td colspan="6"><i class="fa-solid fa-spinner fa-spin me-2"></i> Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== PDF MANAGEMENT TAB ========== -->
+        <div id="pdfTab" class="tab-view">
+            <div class="page-header">
+                <div>
+                    <h2>PDF & Educational Notes</h2>
+                    <p>Add, edit, and manage all downloadable materials for Grades 1–13</p>
+                </div>
+                <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addPdfModal" onclick="openAddModal()">
+                    <i class="fa-solid fa-plus"></i> Add New Material
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="content-card mb-4">
+                <div class="content-card-body" style="padding:16px 24px;">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                        <div class="search-wrapper">
+                            <i class="fa-solid fa-search"></i>
+                            <input type="text" class="search-input" id="pdfSearch" placeholder="Search by title, subject..." oninput="filterPdfTable()">
+                        </div>
+                        <select id="pdfFilterGrade" class="form-select" style="width:auto;" onchange="filterPdfTable()">
+                            <option value="all">All Grades</option>
+                            <option value="1">Grade 1</option><option value="2">Grade 2</option>
+                            <option value="3">Grade 3</option><option value="4">Grade 4</option>
+                            <option value="5">Grade 5</option><option value="6">Grade 6</option>
+                            <option value="7">Grade 7</option><option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option><option value="10">Grade 10</option>
+                            <option value="11">Grade 11</option><option value="12">Grade 12</option>
+                            <option value="13">Grade 13</option>
+                        </select>
+                        <select id="pdfFilterType" class="form-select" style="width:auto;" onchange="filterPdfTable()">
+                            <option value="all">All Types</option>
+                            <option value="Short Notes">Short Notes</option>
+                            <option value="Paper (PDF)">Papers (PDF)</option>
+                            <option value="Extracurricular Notes">Extracurricular</option>
+                        </select>
+                        <button class="btn-action view" onclick="refreshPdfs()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>Subject</th>
+                                <th>Grade</th>
+                                <th>Type</th>
+                                <th>Downloads</th>
+                                <th>Link</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pdfTableBody">
+                            <tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin me-2"></i> Loading materials...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== MARKETPLACE TAB ========== -->
+        <div id="marketTab" class="tab-view">
+            <div class="page-header">
+                <div>
+                    <h2>Marketplace Management</h2>
+                    <p>Manage user accounts, approve registrations, and control marketplace access</p>
+                </div>
+                <button class="btn-action view" onclick="loadMarketplace()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            </div>
+            <div class="content-card">
+                <div style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Business / User</th>
+                                <th>Email</th>
+                                <th>WhatsApp</th>
+                                <th>Materials</th>
+                                <th>Downloads</th>
+                                <th>Status</th>
+                                <th>Marketplace</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="marketTableBody">
+                            <tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin me-2"></i> Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== ADS TAB ========== -->
+        <div id="adsTab" class="tab-view">
+            <div class="page-header">
+                <div>
+                    <h2>Monetag & Ad Settings</h2>
+                    <p>Configure ad codes, direct links, and banner scripts for the public marketplace</p>
+                </div>
+            </div>
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fa-solid fa-circle-dollar-to-slot me-2" style="color:var(--warning)"></i> Monetization Configuration</h5>
+                </div>
+                <div class="content-card-body">
+                    <form onsubmit="saveAds(event)">
+                        <div class="form-section-title">Direct Link</div>
+                        <div class="mb-4">
+                            <label class="form-label">Monetag Direct Link URL</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-link"></i></span>
+                                <input type="url" id="monetagDirectLink" class="form-control" placeholder="https://omg10.com/4/xxxxxx">
+                            </div>
+                            <small style="color:var(--text-muted);font-size:12px;margin-top:6px;display:block;">
+                                This URL is used for the countdown timer redirect on file downloads.
+                            </small>
+                        </div>
+
+                        <div class="form-section-title">Banner Codes</div>
+                        <div class="mb-4">
+                            <label class="form-label">Top Banner HTML / Script</label>
+                            <textarea id="topBannerCode" class="form-control" rows="4" placeholder="<script type='text/javascript'>...</script>"></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Bottom Banner HTML / Script</label>
+                            <textarea id="bottomBannerCode" class="form-control" rows="4" placeholder="<script type='text/javascript'>...</script>"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-primary-custom">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Ad Configuration
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== SETTINGS TAB ========== -->
+        <div id="settingsTab" class="tab-view">
+            <div class="page-header">
+                <div>
+                    <h2>Site Settings</h2>
+                    <p>Configure global site name, contact details, and other system preferences</p>
+                </div>
+            </div>
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fa-solid fa-sliders me-2" style="color:var(--primary)"></i> General Configuration</h5>
+                </div>
+                <div class="content-card-body">
+                    <form onsubmit="saveSettings(event)">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Website / Portal Name</label>
+                                <input type="text" id="siteName" class="form-control" placeholder="EduPortal Sri Lanka">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contact WhatsApp Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa-brands fa-whatsapp"></i></span>
+                                    <input type="tel" id="contactWhatsApp" class="form-control" placeholder="+94 711 234 567">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn-primary-custom">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- =================== ADD / EDIT PDF MODAL =================== -->
+<div class="modal fade" id="addPdfModal" tabindex="-1" aria-labelledby="pdfModalTitle">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfModalTitle"><i class="fa-solid fa-file-pdf me-2" style="color:var(--danger)"></i> Add New Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editPdfId">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Note / Paper Title <span style="color:var(--danger)">*</span></label>
+                        <input type="text" id="pdfTitle" class="form-control" placeholder="e.g. Physics Short Notes - Chapter 5" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Subject / Category <span style="color:var(--danger)">*</span></label>
+                        <select id="pdfCategory" class="form-select">
+                            <option value="ICT">ICT (Information Technology)</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Combined Maths">Combined Maths</option>
+                            <option value="Biology">Biology</option>
+                            <option value="Sinhala">Sinhala Language</option>
+                            <option value="English">English Language</option>
+                            <option value="History">History</option>
+                            <option value="Geography">Geography</option>
+                            <option value="Commerce">Commerce</option>
+                            <option value="Economics">Economics</option>
+                            <option value="Accounting">Accounting</option>
+                            <option value="Business Studies">Business Studies</option>
+                            <option value="Art">Art</option>
+                            <option value="Music">Music</option>
+                            <option value="General">General / Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Material Type <span style="color:var(--danger)">*</span></label>
+                        <select id="pdfMaterialType" class="form-select">
+                            <option value="Short Notes">📝 Short Notes</option>
+                            <option value="Paper (PDF)">📄 Paper (PDF)</option>
+                            <option value="Extracurricular Notes">🌟 Extracurricular Notes</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Grade / Exam Level <span style="color:var(--danger)">*</span></label>
+                        <select id="pdfGrade" class="form-select">
+                            <option value="1">Grade 1</option>
+                            <option value="2">Grade 2</option>
+                            <option value="3">Grade 3</option>
+                            <option value="4">Grade 4</option>
+                            <option value="5">Grade 5</option>
+                            <option value="6">Grade 6</option>
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                            <option value="11">Grade 11 (O/L)</option>
+                            <option value="12">Grade 12 (A/L Year 1)</option>
+                            <option value="13">Grade 13 (A/L Year 2)</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Google Drive / Direct Download Link <span style="color:var(--danger)">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-link"></i></span>
+                            <input type="url" id="pdfDriveUrl" class="form-control" placeholder="https://drive.google.com/file/d/..." required>
+                        </div>
+                        <small style="color:var(--text-muted);font-size:12px;margin-top:6px;display:block;">
+                            Use a direct download link or a Google Drive share link set to "Anyone with the link".
+                        </small>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Description (Optional)</label>
+                        <textarea id="pdfDescription" class="form-control" rows="3" placeholder="Brief description of this material's contents..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-action view" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-primary-custom" onclick="handleSavePdf()">
+                    <i class="fa-solid fa-floppy-disk"></i> <span id="pdfSaveBtnText">Save Material</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =================== TOAST CONTAINER =================== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ===================== CONFIG =====================
+    const API_URL = '/api/admin';
+    let token = localStorage.getItem('adminToken');
+    let allPdfs = [];
+    let editingPdfId = null;
+
+    // ===================== INIT =====================
+    window.onload = function () {
+        // Set today's date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        if (token) {
+            showDashboard();
+        }
+
+        // Allow Enter key on login
+        document.getElementById('loginPass').addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    };
+
+    function showDashboard() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboardApp').style.display = 'flex';
+        const name = localStorage.getItem('adminName') || 'Admin';
+        document.getElementById('welcomeName').textContent = name;
+        document.getElementById('adminDisplayName').textContent = name;
+        document.getElementById('adminAvatarLetter').textContent = name.charAt(0).toUpperCase();
+        loadOverviewStats();
+        loadPdfs();
+    }
+
+    // ===================== AUTH =====================
+    async function handleLogin() {
+        const btn = document.getElementById('btnLogin');
+        const errEl = document.getElementById('loginError');
+        errEl.style.display = 'none';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Signing in...';
+        btn.disabled = true;
+
+        const username = document.getElementById('loginUser').value.trim();
+        const password = document.getElementById('loginPass').value;
+
+        if (!username || !password) {
+            showLoginError('Please enter your username and password.');
+            btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-2"></i> Sign In';
+            btn.disabled = false;
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                token = data.token;
+                localStorage.setItem('adminToken', token);
+                localStorage.setItem('adminName', data.business_name || username);
+                showDashboard();
+            } else {
+                showLoginError(data.error || 'Invalid credentials. Please try again.');
+            }
+        } catch (e) {
+            showLoginError('Cannot connect to the server. Make sure the backend is running.');
+        }
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-2"></i> Sign In';
+        btn.disabled = false;
+    }
+
+    function showLoginError(msg) {
+        const el = document.getElementById('loginError');
+        el.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + msg;
+        el.style.display = 'flex';
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminName');
+        token = null;
+        location.reload();
+    }
+
+    // ===================== TAB SWITCHING =====================
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-link-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if (el) el.classList.add('active');
+
+        if (tabId === 'adsTab') loadAds();
+        if (tabId === 'settingsTab') loadSettings();
+        if (tabId === 'marketTab') loadMarketplace();
+        if (tabId === 'pdfTab') { allPdfs = []; loadPdfs(); }
+    }
+
+    // ===================== AUTH HEADER =====================
+    const authHeader = () => ({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' });
+
+    // ===================== OVERVIEW STATS =====================
+    async function loadOverviewStats() {
+        try {
+            const res = await fetch(`${API_URL}/stats`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) { handleUnauth(res.status); return; }
+            const data = await res.json();
+            document.getElementById('statPdfs').textContent = data.totalPdfs ?? 0;
+            document.getElementById('statDownloads').textContent = data.totalDownloads ?? 0;
+            document.getElementById('statProducts').textContent = data.totalProducts ?? 0;
+            document.getElementById('statUsers').textContent = data.totalUsers ?? 0;
+        } catch (e) {
+            console.error('Stats error:', e);
+        }
+    }
+
+    // ===================== PDF MANAGEMENT =====================
+    async function loadPdfs(isRecent = false) {
+        try {
+            const res = await fetch(`${API_URL}/pdfs`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) { handleUnauth(res.status); return; }
+            const pdfs = await res.json();
+            allPdfs = pdfs;
+
+            // Update badge
+            document.getElementById('navBadgePdf').textContent = pdfs.length;
+
+            // Recent PDF table (overview)
+            renderRecentTable(pdfs.slice(0, 6));
+
+            // Full PDF table
+            renderPdfTable(pdfs);
+        } catch (e) {
+            console.error('Load PDFs error:', e);
+        }
+    }
+
+    async function refreshPdfs() {
+        document.getElementById('pdfTableBody').innerHTML = '<tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin me-2"></i> Refreshing...</td></tr>';
+        await loadPdfs();
+        showToast('Materials refreshed', 'success');
+    }
+
+    function renderRecentTable(pdfs) {
+        const tbody = document.getElementById('recentPdfBody');
+        if (!pdfs.length) {
+            tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-box-open"></i><h6>No materials yet</h6><p>Add your first PDF or note to get started.</p></div></td></tr>';
+            return;
+        }
+        tbody.innerHTML = pdfs.map((p, i) => `
+            <tr>
+                <td><strong>${p.title}</strong></td>
+                <td><span class="badge-pill info">${p.category || '—'}</span></td>
+                <td><span class="badge-pill purple">Gr. ${p.grade?.replace('Grade ', '') || '—'}</span></td>
+                <td>${getTypeBadge(p.material_type)}</td>
+                <td><i class="fa-solid fa-download" style="color:var(--text-muted);margin-right:5px;"></i>${p.downloads ?? 0}</td>
+                <td>
+                    <button class="btn-action edit" onclick="openEditModal('${p._id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-action delete" onclick="deletePdf('${p._id}', '${escHtml(p.title)}')" style="margin-left:4px;"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderPdfTable(pdfs) {
+        const tbody = document.getElementById('pdfTableBody');
+        if (!pdfs.length) {
+            tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fa-regular fa-folder-open"></i><h6>No materials found</h6><p>Click "Add New Material" to upload your first PDF or note.</p></div></td></tr>';
+            return;
+        }
+        tbody.innerHTML = pdfs.map((p, i) => `
+            <tr data-grade="${p.grade?.replace('Grade ', '') || ''}" data-type="${p.material_type || ''}" data-title="${(p.title || '').toLowerCase()}" data-subject="${(p.category || '').toLowerCase()}">
+                <td style="color:var(--text-muted);font-size:12px;">${String(i + 1).padStart(2, '0')}</td>
+                <td>
+                    <div style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(p.title)}">${escHtml(p.title)}</div>
+                    ${p.description ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${escHtml(p.description.slice(0, 60))}${p.description.length > 60 ? '...' : ''}</div>` : ''}
+                </td>
+                <td><span class="badge-pill info">${escHtml(p.category || '—')}</span></td>
+                <td><span class="badge-pill purple">Gr. ${p.grade?.replace('Grade ', '') || '—'}</span></td>
+                <td>${getTypeBadge(p.material_type)}</td>
+                <td>
+                    <i class="fa-solid fa-download" style="color:var(--text-muted);margin-right:5px;"></i>
+                    <strong>${p.downloads ?? 0}</strong>
+                </td>
+                <td>
+                    ${p.driveUrl ? `<a href="${escHtml(p.driveUrl)}" target="_blank" class="btn-action view" style="text-decoration:none;padding:5px 10px;"><i class="fa-solid fa-external-link-alt"></i></a>` : '<span style="color:#475569;">—</span>'}
+                </td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-action edit" onclick="openEditModal('${p._id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-action delete" onclick="deletePdf('${p._id}', '${escHtml(p.title)}')" style="margin-left:4px;"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function filterPdfTable() {
+        const search = document.getElementById('pdfSearch').value.toLowerCase();
+        const grade = document.getElementById('pdfFilterGrade').value;
+        const type = document.getElementById('pdfFilterType').value;
+
+        const filtered = allPdfs.filter(p => {
+            const matchSearch = !search || (p.title || '').toLowerCase().includes(search) || (p.category || '').toLowerCase().includes(search);
+            const gradeNum = p.grade?.replace('Grade ', '') || '';
+            const matchGrade = grade === 'all' || gradeNum === grade;
+            const matchType = type === 'all' || p.material_type === type;
+            return matchSearch && matchGrade && matchType;
+        });
+        renderPdfTable(filtered);
+    }
+
+    function getTypeBadge(type) {
+        const map = {
+            'Short Notes': '<span class="badge-pill success"><i class="fa-solid fa-note-sticky"></i> Short Notes</span>',
+            'Paper (PDF)': '<span class="badge-pill danger"><i class="fa-solid fa-file-pdf"></i> Paper</span>',
+            'Extracurricular Notes': '<span class="badge-pill warning"><i class="fa-solid fa-star"></i> Extra</span>'
+        };
+        return map[type] || `<span class="badge-pill gray">${escHtml(type || '—')}</span>`;
+    }
+
+    // ===================== ADD / EDIT MODAL =====================
+    function openAddModal() {
+        editingPdfId = null;
+        document.getElementById('pdfModalTitle').innerHTML = '<i class="fa-solid fa-plus me-2" style="color:var(--primary)"></i> Add New Material';
+        document.getElementById('pdfSaveBtnText').textContent = 'Save Material';
+        document.getElementById('editPdfId').value = '';
+        document.getElementById('pdfTitle').value = '';
+        document.getElementById('pdfCategory').value = 'ICT';
+        document.getElementById('pdfMaterialType').value = 'Paper (PDF)';
+        document.getElementById('pdfGrade').value = '11';
+        document.getElementById('pdfDriveUrl').value = '';
+        document.getElementById('pdfDescription').value = '';
+    }
+
+    function openEditModal(id) {
+        const pdf = allPdfs.find(p => p._id === id);
+        if (!pdf) return;
+        editingPdfId = id;
+
+        document.getElementById('pdfModalTitle').innerHTML = '<i class="fa-solid fa-pen me-2" style="color:var(--primary)"></i> Edit Material';
+        document.getElementById('pdfSaveBtnText').textContent = 'Update Material';
+        document.getElementById('editPdfId').value = id;
+        document.getElementById('pdfTitle').value = pdf.title || '';
+
+        // Match subject to select
+        const catSel = document.getElementById('pdfCategory');
+        const catVal = pdf.category || 'General';
+        const catOpt = [...catSel.options].find(o => o.value === catVal);
+        catSel.value = catOpt ? catVal : 'General';
+
+        document.getElementById('pdfMaterialType').value = pdf.material_type || 'Paper (PDF)';
+
+        // Parse grade number
+        const gradeNum = (pdf.grade || '').replace('Grade ', '') || '11';
+        document.getElementById('pdfGrade').value = gradeNum;
+
+        document.getElementById('pdfDriveUrl').value = pdf.driveUrl || '';
+        document.getElementById('pdfDescription').value = pdf.description || '';
+
+        const modal = new bootstrap.Modal(document.getElementById('addPdfModal'));
+        modal.show();
+    }
+
+    async function handleSavePdf() {
+        const title = document.getElementById('pdfTitle').value.trim();
+        const category = document.getElementById('pdfCategory').value;
+        const material_type = document.getElementById('pdfMaterialType').value;
+        const grade = document.getElementById('pdfGrade').value;
+        const driveUrl = document.getElementById('pdfDriveUrl').value.trim();
+        const description = document.getElementById('pdfDescription').value.trim();
+
+        if (!title || !driveUrl) {
+            showToast('Title and Drive URL are required.', 'error');
+            return;
+        }
+
+        const payload = { title, category, material_type, grade, driveUrl, description };
+        const isEdit = !!editingPdfId;
+        const url = isEdit ? `${API_URL}/pdfs/${editingPdfId}` : `${API_URL}/pdfs`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, { method, headers: authHeader(), body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('addPdfModal')).hide();
+                showToast(isEdit ? 'Material updated successfully!' : 'Material added successfully!', 'success');
+                await loadPdfs();
+                await loadOverviewStats();
+            } else {
+                showToast(data.error || 'Save failed.', 'error');
+            }
+        } catch (e) {
+            showToast('Server error. Please try again.', 'error');
+        }
+    }
+
+    async function deletePdf(id, title) {
+        if (!confirm(`Delete "${title}"?\n\nThis action cannot be undone.`)) return;
+        try {
+            const res = await fetch(`${API_URL}/pdfs/${id}`, { method: 'DELETE', headers: authHeader() });
+            if (res.ok) {
+                showToast('Material deleted.', 'success');
+                await loadPdfs();
+                await loadOverviewStats();
+            } else {
+                const d = await res.json();
+                showToast(d.error || 'Delete failed.', 'error');
+            }
+        } catch (e) {
+            showToast('Server error.', 'error');
+        }
+    }
+
+    // ===================== MARKETPLACE =====================
+    async function loadMarketplace() {
+        document.getElementById('marketTableBody').innerHTML = '<tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin me-2"></i> Loading...</td></tr>';
+        try {
+            const res = await fetch(`${API_URL}/marketplace`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) { handleUnauth(res.status); return; }
+            const users = await res.json();
+            const tbody = document.getElementById('marketTableBody');
+
+            if (!users.length) {
+                tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users-slash"></i><h6>No users found</h6><p>No registered users yet.</p></div></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>
+                        <strong>${escHtml(u.business_name)}</strong>
+                        <div style="font-size:11px;color:var(--text-muted);">ID: ${u.id.slice(-6)}</div>
+                    </td>
+                    <td style="font-size:13px;">${escHtml(u.email || '—')}</td>
+                    <td style="font-size:13px;">${escHtml(u.whatsapp_number || '—')}</td>
+                    <td><span class="badge-pill info"><i class="fa-solid fa-file"></i> ${u.materialCount || 0}</span></td>
+                    <td><span class="badge-pill green"><i class="fa-solid fa-download"></i> ${u.totalDownloads || 0}</span></td>
+                    <td>
+                        <span class="badge-pill ${u.status === 'approved' ? 'success' : 'warning'}">
+                            <i class="fa-solid fa-circle" style="font-size:6px;"></i>
+                            ${u.status === 'approved' ? 'Approved' : 'Pending'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge-pill ${u.marketplace_enabled ? 'success' : 'danger'}">
+                            <i class="fa-solid fa-${u.marketplace_enabled ? 'check' : 'xmark'}"></i>
+                            ${u.marketplace_enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                    </td>
+                    <td style="white-space:nowrap;">
+                        ${u.status !== 'approved' ? `<button class="btn-action success" onclick="updateMarketUser('${u.id}', {status:'approved'})" title="Approve"><i class="fa-solid fa-check"></i></button>` : ''}
+                        <button class="btn-action ${u.marketplace_enabled ? 'delete' : 'view'}" 
+                            onclick="updateMarketUser('${u.id}', {marketplace_enabled: ${!u.marketplace_enabled}})"
+                            title="${u.marketplace_enabled ? 'Disable Marketplace' : 'Enable Marketplace'}"
+                            style="margin-left:4px;">
+                            <i class="fa-solid fa-store"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            document.getElementById('marketTableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:20px;">Error loading marketplace data.</td></tr>';
+        }
+    }
+
+    async function updateMarketUser(id, data) {
+        try {
+            const res = await fetch(`${API_URL}/marketplace/${id}`, { method: 'PUT', headers: authHeader(), body: JSON.stringify(data) });
+            if (res.ok) {
+                showToast('User updated.', 'success');
+                loadMarketplace();
+            } else {
+                const d = await res.json();
+                showToast(d.error || 'Update failed.', 'error');
+            }
+        } catch (e) {
+            showToast('Server error.', 'error');
+        }
+    }
+
+    // ===================== ADS =====================
+    async function loadAds() {
+        try {
+            const res = await fetch(`${API_URL}/ads`);
+            const data = await res.json();
+            document.getElementById('monetagDirectLink').value = data.monetagDirectLink || '';
+            document.getElementById('topBannerCode').value = data.topBannerCode || '';
+            document.getElementById('bottomBannerCode').value = data.bottomBannerCode || '';
+        } catch (e) { }
+    }
+
+    async function saveAds(e) {
+        e.preventDefault();
+        const payload = {
+            monetagDirectLink: document.getElementById('monetagDirectLink').value,
+            topBannerCode: document.getElementById('topBannerCode').value,
+            bottomBannerCode: document.getElementById('bottomBannerCode').value
+        };
+        try {
+            const res = await fetch(`${API_URL}/ads`, { method: 'PUT', headers: authHeader(), body: JSON.stringify(payload) });
+            if (res.ok) showToast('Ad configuration saved!', 'success');
+            else showToast('Failed to save ad settings.', 'error');
+        } catch (e) { showToast('Server error.', 'error'); }
+    }
+
+    // ===================== SITE SETTINGS =====================
+    async function loadSettings() {
+        try {
+            const res = await fetch(`${API_URL}/site-settings`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            document.getElementById('siteName').value = data.siteName || '';
+            document.getElementById('contactWhatsApp').value = data.contactWhatsApp || '';
+        } catch (e) { }
+    }
+
+    async function saveSettings(e) {
+        e.preventDefault();
+        const payload = {
+            siteName: document.getElementById('siteName').value,
+            contactWhatsApp: document.getElementById('contactWhatsApp').value
+        };
+        try {
+            const res = await fetch(`${API_URL}/site-settings`, { method: 'PUT', headers: authHeader(), body: JSON.stringify(payload) });
+            if (res.ok) showToast('Site settings saved!', 'success');
+            else showToast('Failed to save settings.', 'error');
+        } catch (e) { showToast('Server error.', 'error'); }
+    }
+
+    // ===================== HELPERS =====================
+    function handleUnauth(status) {
+        if (status === 401 || status === 403) {
+            showToast('Session expired. Please log in again.', 'error');
+            setTimeout(handleLogout, 1500);
+        }
+    }
+
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const id = 'toast-' + Date.now();
+        const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+        const el = document.createElement('div');
+        el.className = `toast-item ${type}`;
+        el.id = id;
+        el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escHtml(message)}</span>`;
+        container.appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3000);
+    }
+</script>
+</body>
+</html>

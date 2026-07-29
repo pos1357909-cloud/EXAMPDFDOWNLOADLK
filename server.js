@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice, Category, Material } = require('./database');
+const { connectDB, initializeDatabase, User, Product, Invoice, Category, Material, AdSettings, SiteSettings } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -91,6 +91,8 @@ const authMiddleware = async (req, res, next) => {
 };
 
 app.use('/api', (req, res, next) => {
+    // /api/admin/* routes handle their own admin-role authentication internally
+    if (req.path.startsWith('/admin')) return next();
     if (req.path === '/auth/login' || req.path === '/auth/register' || req.path.startsWith('/public')) return next();
     return authMiddleware(req, res, next);
 });
@@ -778,6 +780,282 @@ app.post('/api/public/materials/download/:id', async (req, res) => {
 });
 
 // ==== MARKETPLACE API ====
+
+// ==== EDUA ADMIN PORTAL ROUTES ====
+
+// Admin Login (standalone - no Bearer token needed, uses username/password)
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
+    try {
+        const user = await User.findOne({
+            email: new RegExp('^' + String(username) + '$', 'i'),
+            password: String(password),
+            role: 'admin'
+        });
+        if (!user) return res.status(401).json({ error: 'Invalid admin credentials' });
+        res.json({ token: user._id.toString(), business_name: user.business_name });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin Stats
+app.get('/api/admin/stats', async (req, res) => {
+    // Auth via Bearer token
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const totalPdfs = await Material.countDocuments({});
+        const totalDownloadsAgg = await Material.aggregate([{ $group: { _id: null, total: { $sum: '$download_count' } } }]);
+        const totalDownloads = totalDownloadsAgg.length > 0 ? totalDownloadsAgg[0].total : 0;
+        const totalProducts = await Product.countDocuments({});
+        const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
+
+        res.json({ totalPdfs, totalDownloads, totalProducts, totalUsers });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Get all PDFs/Materials
+app.get('/api/admin/pdfs', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const materials = await Material.find({}).sort({ created_at: -1 }).populate('user_id', 'business_name email');
+        const mapped = materials.map(m => ({
+            _id: m._id.toString(),
+            title: m.title,
+            category: m.subject,
+            grade: m.grade ? `Grade ${m.grade}` : 'N/A',
+            material_type: m.material_type,
+            description: m.description,
+            driveUrl: m.file_data,
+            file_name: m.file_name,
+            downloads: m.download_count,
+            isPublished: true,
+            created_at: m.created_at,
+            publisher: m.user_id ? m.user_id.business_name : 'Admin'
+        }));
+        res.json(mapped);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Create PDF/Material
+app.post('/api/admin/pdfs', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const { title, category, grade, driveUrl, material_type, description } = req.body;
+        if (!title || !driveUrl) return res.status(400).json({ error: 'Title and Drive URL are required' });
+
+        // Parse grade: accept "Grade 11" or just "11" or "A/L"
+        let gradeNum = 10; // default
+        if (grade) {
+            const match = String(grade).match(/(\d+)/);
+            if (match) gradeNum = Math.min(13, Math.max(1, parseInt(match[1], 10)));
+        }
+
+        const material = await Material.create({
+            user_id: adminUser._id,
+            title: String(title),
+            grade: gradeNum,
+            subject: String(category || 'General'),
+            material_type: ['Short Notes', 'Paper (PDF)', 'Extracurricular Notes'].includes(material_type) ? material_type : 'Paper (PDF)',
+            description: String(description || ''),
+            file_data: String(driveUrl),
+            file_name: String(title)
+        });
+        res.status(201).json({ message: 'PDF added successfully', id: material._id.toString() });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Update PDF/Material
+app.put('/api/admin/pdfs/:id', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const { title, category, grade, driveUrl, material_type, description } = req.body;
+        const updateData = {};
+        if (title) updateData.title = String(title);
+        if (category) updateData.subject = String(category);
+        if (grade) {
+            const match = String(grade).match(/(\d+)/);
+            if (match) updateData.grade = Math.min(13, Math.max(1, parseInt(match[1], 10)));
+        }
+        if (driveUrl) updateData.file_data = String(driveUrl);
+        if (material_type) updateData.material_type = material_type;
+        if (description !== undefined) updateData.description = String(description);
+
+        const material = await Material.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        if (!material) return res.status(404).json({ error: 'Material not found' });
+        res.json({ message: 'PDF updated successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Delete PDF/Material
+app.delete('/api/admin/pdfs/:id', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const material = await Material.findByIdAndDelete(req.params.id);
+        if (!material) return res.status(404).json({ error: 'Material not found' });
+        res.json({ message: 'PDF deleted successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Get Ad Settings (public read, auth write)
+app.get('/api/admin/ads', async (req, res) => {
+    try {
+        let settings = await AdSettings.findById('global');
+        if (!settings) settings = { monetagDirectLink: '', topBannerCode: '', bottomBannerCode: '' };
+        res.json(settings);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Save Ad Settings
+app.put('/api/admin/ads', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const { monetagDirectLink, topBannerCode, bottomBannerCode } = req.body;
+        await AdSettings.findOneAndUpdate(
+            { _id: 'global' },
+            { monetagDirectLink, topBannerCode, bottomBannerCode, updatedAt: new Date() },
+            { upsert: true, new: true }
+        );
+        res.json({ message: 'Ad settings saved successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Get Site Settings
+app.get('/api/admin/site-settings', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        let settings = await SiteSettings.findById('global');
+        if (!settings) settings = { siteName: 'EduPortal Sri Lanka', contactWhatsApp: '' };
+        res.json(settings);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Save Site Settings
+app.put('/api/admin/site-settings', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const { siteName, contactWhatsApp } = req.body;
+        await SiteSettings.findOneAndUpdate(
+            { _id: 'global' },
+            { siteName, contactWhatsApp, updatedAt: new Date() },
+            { upsert: true, new: true }
+        );
+        res.json({ message: 'Site settings saved successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Get all marketplace users
+app.get('/api/admin/marketplace', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const users = await User.find({ role: { $ne: 'admin' } }).select('-password').sort({ business_name: 1 });
+        const result = await Promise.all(users.map(async u => {
+            const materialCount = await Material.countDocuments({ user_id: u._id });
+            const downloadAgg = await Material.aggregate([{ $match: { user_id: u._id } }, { $group: { _id: null, total: { $sum: '$download_count' } } }]);
+            return {
+                id: u._id.toString(),
+                business_name: u.business_name,
+                email: u.email,
+                whatsapp_number: u.whatsapp_number,
+                status: u.status,
+                marketplace_enabled: u.marketplace_enabled,
+                materialCount,
+                totalDownloads: downloadAgg.length > 0 ? downloadAgg[0].total : 0
+            };
+        }));
+        res.json(result);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Toggle marketplace access for user
+app.put('/api/admin/marketplace/:id', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const token = authHeader.split(' ')[1];
+        const adminUser = await User.findOne({ _id: token, role: 'admin' });
+        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
+
+        const { marketplace_enabled, status } = req.body;
+        const updateData = {};
+        if (marketplace_enabled !== undefined) updateData.marketplace_enabled = marketplace_enabled;
+        if (status !== undefined) updateData.status = status;
+
+        const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json({ message: 'User updated successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== ORIGINAL MARKETPLACE API ====
 
 app.post('/api/marketplace/enable', async (req, res) => {
     try {

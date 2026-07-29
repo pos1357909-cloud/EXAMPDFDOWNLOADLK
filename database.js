@@ -94,6 +94,21 @@ const MaterialSchema = new mongoose.Schema({
     created_at: { type: Date, default: Date.now }
 });
 
+const AdSettingsSchema = new mongoose.Schema({
+    _id: { type: String, default: 'global' },
+    monetagDirectLink: { type: String, default: '' },
+    topBannerCode: { type: String, default: '' },
+    bottomBannerCode: { type: String, default: '' },
+    updatedAt: { type: Date, default: Date.now }
+});
+
+const SiteSettingsSchema = new mongoose.Schema({
+    _id: { type: String, default: 'global' },
+    siteName: { type: String, default: 'EduPortal Sri Lanka' },
+    contactWhatsApp: { type: String, default: '' },
+    updatedAt: { type: Date, default: Date.now }
+});
+
 const Category = mongoose.model('Category', CategorySchema);
 const Project = null; // Removed if any project specific logic is there, but here I see models.
 
@@ -102,6 +117,8 @@ const User = mongoose.model('User', UserSchema);
 const Product = mongoose.model('Product', ProductSchema);
 const Invoice = mongoose.model('Invoice', InvoiceSchema);
 const Material = mongoose.model('Material', MaterialSchema);
+const AdSettings = mongoose.model('AdSettings', AdSettingsSchema);
+const SiteSettings = mongoose.model('SiteSettings', SiteSettingsSchema);
 
 // Create default admin user
 const initializeDatabase = async () => {
@@ -141,5 +158,7 @@ module.exports = {
     Product,
     Invoice,
     Category,
-    Material
+    Material,
+    AdSettings,
+    SiteSettings
 };
