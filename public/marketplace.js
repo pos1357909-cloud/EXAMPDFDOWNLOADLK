@@ -1,112 +1,262 @@
-const API_BASE = '/api/public/store';
+const MATERIALS_API_BASE = '/api/public/materials';
 
-let allProducts = [];
-let storeWhatsappNumber = '';
+var currentDriveUrl = "";
+var currentDownloadId = "";
+var countdownTimer;
+var secondsLeft = 5;
+
+// Monetag Direct Link URL
+var monetagDirectLink = "https://omg10.com/4/11453715";
+
+var allMaterials = [];
+var selectedGrade = 'all';
+var selectedCategory = 'all';
+var currentBusinessName = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Determine the business name from the URL path
+    // Determine business name if present in URL
     const pathParts = window.location.pathname.split('/');
-    // Get the last part of the path (business name). 
     let businessNameRaw = pathParts[pathParts.length - 1];
-
-    // Decode URL properly to handle spaces (like User%20Store -> User Store)
     let businessName = decodeURIComponent(businessNameRaw);
-    
-    // If empty path somehow, just alert
-    if (!businessName || businessName === '/') {
-        showError('Invalid Store URL');
-        return;
+
+    if (businessName && businessName !== '/' && businessName !== 'marketplace.html' && businessName !== 'index.html' && businessName !== 'favicon.ico') {
+        currentBusinessName = businessName;
     }
 
-    try {
-        // fetch the encoded name
-        const res = await fetch(`${API_BASE}/${encodeURIComponent(businessName)}`);
-        
-        if (!res.ok) {
-            throw new Error('Store not found or marketplace is disabled');
-        }
-        
-        const data = await res.json();
-        
-        // Update header
-        document.title = `${data.business_name} - Marketplace`;
-        document.getElementById('store-name').textContent = data.business_name;
-        
-        allProducts = data.products;
-        storeWhatsappNumber = data.whatsapp_number || '94711234567'; // Fallback if old user
-        
-        document.getElementById('loading-spinner').style.display = 'none';
-        
-        renderProducts(allProducts);
-        
-    } catch (err) {
-        showError(err.message);
+    // Apply saved dark theme
+    var savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+        document.body.setAttribute("data-theme", "dark");
+        var themeIcon = document.getElementById("themeIcon");
+        if (themeIcon) themeIcon.className = "fa-solid fa-sun";
     }
-    
-    // Setup Search
-    document.getElementById('search-input').addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const filtered = allProducts.filter(p => p.name.toLowerCase().includes(term));
-        renderProducts(filtered);
-    });
+
+    await loadPortalData();
 });
 
-function renderProducts(products) {
-    const grid = document.getElementById('products-grid');
-    const noProducts = document.getElementById('no-products');
-    
-    grid.innerHTML = '';
-    
-    if (products.length === 0) {
-        noProducts.style.display = 'block';
-    } else {
-        noProducts.style.display = 'none';
-        
-        products.forEach(p => {
-            const formatCurrency = (amount) => {
-                return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'LKR' }).format(amount).replace('LKR', 'Rs.');
-            };
+async function loadPortalData() {
+    try {
+        let materialsUrl = MATERIALS_API_BASE;
+        if (currentBusinessName) {
+            materialsUrl += `?business_name=${encodeURIComponent(currentBusinessName)}`;
+        }
+        const res = await fetch(materialsUrl);
+        if (res.ok) {
+            allMaterials = await res.json();
+        }
+        renderNotes();
+    } catch (err) {
+        console.error('Failed to load portal materials:', err);
+        renderNotes();
+    }
+}
 
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            let imgHTML = '';
-            if (p.image) {
-                imgHTML = `<div class="product-image" style="background-image: url('${p.image}')"></div>`;
+function renderNotes() {
+    const grid = document.getElementById('notesGrid');
+    const noNotesMsg = document.getElementById('noNotesMsg');
+    const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const filtered = allMaterials.filter(m => {
+        const matchesGrade = selectedGrade === 'all' || m.grade == selectedGrade;
+        
+        let matchesCat = true;
+        if (selectedCategory !== 'all') {
+            if (['Short Notes', 'Paper (PDF)', 'Extracurricular Notes'].includes(selectedCategory)) {
+                matchesCat = m.material_type === selectedCategory;
             } else {
-                imgHTML = `<div class="product-image"><i class='bx bx-image'></i></div>`;
+                matchesCat = m.subject.toLowerCase().includes(selectedCategory.toLowerCase());
             }
-            
+        }
+
+        const matchesSearch = !searchVal || 
+            m.title.toLowerCase().includes(searchVal) || 
+            m.subject.toLowerCase().includes(searchVal) || 
+            (m.description && m.description.toLowerCase().includes(searchVal)) ||
+            `grade ${m.grade}`.includes(searchVal);
+
+        return matchesGrade && matchesCat && matchesSearch;
+    });
+
+    if (filtered.length === 0) {
+        if (noNotesMsg) noNotesMsg.style.display = 'block';
+    } else {
+        if (noNotesMsg) noNotesMsg.style.display = 'none';
+
+        filtered.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('data-category', m.subject.toLowerCase());
+
+            let typeIcon = 'fa-file-pdf';
+            if (m.material_type === 'Short Notes') typeIcon = 'fa-file-pen';
+            if (m.material_type === 'Extracurricular Notes') typeIcon = 'fa-book-open-reader';
+
             card.innerHTML = `
-                ${imgHTML}
-                <div class="product-details">
-                    <div class="product-name">${p.name}</div>
-                    <div class="product-price">${formatCurrency(p.price)}</div>
+                <div>
+                    <span class="badge">Grade ${m.grade} • ${m.material_type}</span>
+                    <h3>${m.title}</h3>
+                    <p style="font-weight:600; color:var(--primary-color); margin-bottom:6px;">
+                        <i class="fa-solid fa-book"></i> ${m.subject}
+                    </p>
+                    <p>${m.description || 'සටහනක් සූදානම් කර ඇත.'}</p>
+                </div>
+                <div>
+                    <button class="btn-download btn-read-note" onclick="openPreview('${m.id}')" style="margin-bottom:10px;">
+                        <i class="fa-solid fa-eye"></i> Read Note / Preview
+                    </button>
+                    ${m.has_file ? `
+                        <button class="btn-download" onclick="triggerDownload('${m.id}')">
+                            <i class="fa-solid ${typeIcon}"></i> Download PDF (${m.download_count || 0})
+                        </button>
+                    ` : ''}
                 </div>
             `;
-            
-            // Add WhatsApp click handler
-            card.style.cursor = 'pointer';
-            card.addEventListener('click', () => {
-                const message = `Hi! I am interested in buying: ${p.name}`;
-                const cleanPhone = storeWhatsappNumber.replace(/[^0-9]/g, '');
-                const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
-            });
-            
+
             grid.appendChild(card);
         });
     }
 }
 
-function showError(msg) {
-    document.getElementById('loading-spinner').style.display = 'none';
-    document.getElementById('store-name').textContent = 'Store Unavailable';
+// Live Search Filter
+function filterNotes() {
+    renderNotes();
+}
+
+// Category Filter
+function filterCategory(category, btn) {
+    var buttons = document.querySelectorAll('.category-filters .filter-btn');
+    buttons.forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    selectedCategory = category;
+    renderNotes();
+}
+
+// Grade Filter
+function filterGrade(grade, btn) {
+    var buttons = document.querySelectorAll('.grade-filters .filter-btn');
+    buttons.forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    selectedGrade = grade;
+    renderNotes();
+}
+
+// Dark Mode Toggle
+function toggleDarkMode() {
+    var currentTheme = document.body.getAttribute("data-theme");
+    var themeIcon = document.getElementById("themeIcon");
+    if (currentTheme === "dark") {
+        document.body.removeAttribute("data-theme");
+        localStorage.setItem("theme", "light");
+        if (themeIcon) themeIcon.className = "fa-solid fa-moon";
+    } else {
+        document.body.setAttribute("data-theme", "dark");
+        localStorage.setItem("theme", "dark");
+        if (themeIcon) themeIcon.className = "fa-solid fa-sun";
+    }
+}
+
+// Download Modal & Timer Handler
+function triggerDownload(id) {
+    currentDownloadId = id;
+    secondsLeft = 5;
     
-    const grid = document.getElementById('products-grid');
-    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--danger);">
-        <i class='bx bx-error-circle' style="font-size: 64px; margin-bottom: 20px;"></i>
-        <h2>${msg}</h2>
-        <p>This store might not exist or the owner has disabled their marketplace.</p>
-    </div>`;
+    // 1. Open Monetag Direct Link in a New Tab
+    window.open(monetagDirectLink, "_blank");
+
+    // 2. Show Modal with Countdown
+    document.getElementById("timerDisplay").innerText = secondsLeft;
+    document.getElementById("downloadModal").style.display = "flex";
+
+    // Start Countdown Timer
+    clearInterval(countdownTimer);
+    countdownTimer = setInterval(async function() {
+        secondsLeft--;
+        document.getElementById("timerDisplay").innerText = secondsLeft;
+
+        if (secondsLeft <= 0) {
+            clearInterval(countdownTimer);
+            document.getElementById("downloadModal").style.display = "none";
+            
+            // Increment download count and download file
+            await executeDownload(currentDownloadId);
+        }
+    }, 1000);
+}
+
+async function executeDownload(id) {
+    try {
+        const res = await fetch(`/api/public/materials/download/${id}`, { method: 'POST' });
+        if (!res.ok) throw new Error('Download failed');
+
+        const data = await res.json();
+        
+        // Update local state and UI download count
+        const item = allMaterials.find(m => m.id === id);
+        if (item) {
+            item.download_count = data.download_count;
+            renderNotes();
+        }
+
+        if (data.file_data) {
+            const link = document.createElement('a');
+            link.href = data.file_data;
+            link.download = data.file_name || `${data.title.replace(/[^a-zA-Z0-9]/g, '_')}_Grade${data.grade}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert(`"${data.title}" සටහන කියවීම සඳහා Read Note බොත්තම ඔබන්න.`);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function openPreview(id) {
+    const item = allMaterials.find(m => m.id === id);
+    if (!item) return;
+
+    document.getElementById('prevBadge').textContent = `Grade ${item.grade} • ${item.material_type}`;
+    document.getElementById('prevTitle').textContent = item.title;
+    document.getElementById('prevSubject').innerHTML = `<i class="fa-solid fa-book"></i> ${item.subject} (${item.publisher_name || 'InvoicePro Academy'})`;
+    document.getElementById('prevContent').textContent = item.description || 'සටහනේ සම්පූර්ණ විස්තරයක් ඇතුළත් කර නොමැත.';
+
+    const dlBtn = document.getElementById('prevDlBtn');
+    if (item.has_file) {
+        dlBtn.style.display = 'flex';
+        dlBtn.onclick = () => {
+            closeModal();
+            triggerDownload(item.id);
+        };
+    } else {
+        dlBtn.style.display = 'none';
+    }
+
+    document.getElementById('previewModal').style.display = 'flex';
+}
+
+function closeModal() {
+    clearInterval(countdownTimer);
+    document.getElementById("downloadModal").style.display = "none";
+    document.getElementById("requestModal").style.display = "none";
+    document.getElementById("previewModal").style.display = "none";
+}
+
+function openRequestModal() {
+    document.getElementById("requestModal").style.display = "flex";
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('reqName').value;
+    const subject = document.getElementById('reqSubject').value;
+    const details = document.getElementById('reqDetails').value;
+
+    alert(`ස්තූතියි ${name}! ඔබගේ "${subject}" සටහන් ඉල්ලීම සාර්ථකව යොමු කෙරුණි. ඉක්මණින්ම සටහන එකතු කරනු ලැබේ!`);
+    closeModal();
 }

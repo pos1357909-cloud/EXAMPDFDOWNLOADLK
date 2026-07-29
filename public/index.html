@@ -28,7 +28,7 @@
             <form id="login-form" class="auth-form active">
                 <div class="form-group">
                     <label>Email / Username</label>
-                    <input type="text" id="login-email" class="form-control" required placeholder="Email or 'Admin'" />
+                    <input type="text" id="login-email" class="form-control" required placeholder="Email or 'ZTX'" />
                 </div>
                 <div class="form-group">
                     <label>Password</label>
@@ -106,6 +106,12 @@
                     <a href="#" class="nav-link" data-target="reports-view">
                         <i class="bx bx-bar-chart-alt-2 icon"></i>
                         <span class="link-name">Reports</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-target="materials-view">
+                        <i class="bx bx-book-open icon"></i>
+                        <span class="link-name">Study Materials</span>
                     </a>
                 </li>
                 <li id="nav-item-profile" style="display:none;">
@@ -458,11 +464,129 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Educational Materials View -->
+                <section id="materials-view" class="view">
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+                            <div>
+                                <h2 style="font-size:20px; font-weight:700; color:var(--text-main); margin-bottom:4px;">Educational Materials (Grades 1 - 13)</h2>
+                                <p style="color:var(--text-muted); font-size:14px;">Add Short Notes, PDF Exam Papers, and Extracurricular Notes accessible to students on your Marketplace portal.</p>
+                            </div>
+                            <button class="btn btn-primary" id="btn-add-material"><i class="bx bx-plus"></i> Add New Material</button>
+                        </div>
+                        
+                        <!-- Filters Bar -->
+                        <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; align-items:center;">
+                            <div style="flex:1; min-width:200px;">
+                                <input type="text" id="material-search" class="form-control" placeholder="Search by title, subject..." />
+                            </div>
+                            <div>
+                                <select id="material-grade-filter" class="form-control" style="width:160px;">
+                                    <option value="all">All Grades (1-13)</option>
+                                    <option value="1">Grade 1</option>
+                                    <option value="2">Grade 2</option>
+                                    <option value="3">Grade 3</option>
+                                    <option value="4">Grade 4</option>
+                                    <option value="5">Grade 5</option>
+                                    <option value="6">Grade 6</option>
+                                    <option value="7">Grade 7</option>
+                                    <option value="8">Grade 8</option>
+                                    <option value="9">Grade 9</option>
+                                    <option value="10">Grade 10</option>
+                                    <option value="11">Grade 11</option>
+                                    <option value="12">Grade 12</option>
+                                    <option value="13">Grade 13</option>
+                                </select>
+                            </div>
+                            <div>
+                                <select id="material-type-filter" class="form-control" style="width:180px;">
+                                    <option value="all">All Material Types</option>
+                                    <option value="Short Notes">Short Notes</option>
+                                    <option value="Paper (PDF)">Paper (PDF)</option>
+                                    <option value="Extracurricular Notes">Extracurricular Notes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Materials Grid -->
+                    <div id="materials-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- Loaded via JS -->
+                    </div>
+                    
+                    <div id="materials-empty" style="display:none; text-align:center; padding:60px 20px; background:var(--card-bg); border-radius:12px; border:1px solid var(--border);">
+                        <i class="bx bx-book-open" style="font-size:54px; color:var(--text-muted); opacity:0.5; margin-bottom:12px;"></i>
+                        <h3 style="font-size:18px; color:var(--text-main);">No Educational Materials Added</h3>
+                        <p style="color:var(--text-muted); font-size:14px;">Click "Add New Material" to upload PDF Papers, Short Notes, or Extracurricular Notes for Grades 1 - 13.</p>
+                    </div>
+                </section>
             </div>
         </main>
 
         <!-- Modal overlay for generic use -->
         <div class="modal-overlay" id="modal-overlay">
+            <!-- Add/Edit Material Modal -->
+            <div class="modal" id="material-modal">
+                <div class="modal-header">
+                    <h3 id="material-modal-title">Add Educational Material</h3>
+                    <button class="close-btn" id="btn-close-material-modal"><i class="bx bx-x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="material-form">
+                        <input type="hidden" id="material-id" />
+                        <div class="form-group">
+                            <label>Title *</label>
+                            <input type="text" id="material-title" class="form-control" required placeholder="e.g. Grade 10 Science Unit 1 Short Notes" />
+                        </div>
+                        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                            <div class="form-group" style="flex:1; min-width:140px;">
+                                <label>Target Grade (1 - 13) *</label>
+                                <select id="material-grade" class="form-control" required>
+                                    <option value="">Select Grade</option>
+                                    <option value="1">Grade 1</option>
+                                    <option value="2">Grade 2</option>
+                                    <option value="3">Grade 3</option>
+                                    <option value="4">Grade 4</option>
+                                    <option value="5">Grade 5</option>
+                                    <option value="6">Grade 6</option>
+                                    <option value="7">Grade 7</option>
+                                    <option value="8">Grade 8</option>
+                                    <option value="9">Grade 9</option>
+                                    <option value="10">Grade 10</option>
+                                    <option value="11">Grade 11</option>
+                                    <option value="12">Grade 12</option>
+                                    <option value="13">Grade 13</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1; min-width:140px;">
+                                <label>Material Type *</label>
+                                <select id="material-type" class="form-control" required>
+                                    <option value="Short Notes">Short Notes</option>
+                                    <option value="Paper (PDF)">Paper (PDF)</option>
+                                    <option value="Extracurricular Notes">Extracurricular Notes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Subject *</label>
+                            <input type="text" id="material-subject" class="form-control" required placeholder="e.g. Mathematics, Science, English, ICT, History" />
+                        </div>
+                        <div class="form-group">
+                            <label>Notes Description / Text Content</label>
+                            <textarea id="material-description" class="form-control" rows="4" placeholder="Enter key notes, summary, or details for students..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Attach File / PDF Document</label>
+                            <input type="file" id="material-file-input" class="form-control" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip" />
+                            <small class="form-text text-muted" style="display:block; margin-top:4px;">Upload PDF papers or files (instant download links created automatically).</small>
+                            <div id="material-file-status" style="margin-top:6px; font-size:13px; color:var(--primary); font-weight:500;"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;">Save Educational Material</button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Product Modal -->
             <div class="modal" id="product-modal">
                 <div class="modal-header">

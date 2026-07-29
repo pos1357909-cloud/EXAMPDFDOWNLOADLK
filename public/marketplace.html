@@ -1,55 +1,172 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="si">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketplace</title>
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Boxicons for modern icons -->
+    <title>Educational Notes & PDF Download Portal</title>
+
+    <!-- SEO & Social Media Preview Meta Tags (Open Graph) -->
+    <meta name="description" content="A/L සහ O/L සියලුම විශයන්ට අදාළ කෙටි සටහන්, පාඩම් සටහන් සහ ප්‍රශ්න පත්‍ර නොමිලේ Download කරගන්න.">
+    <meta name="keywords" content="AL Notes, Grade 1-13 Notes, ICT Notes, Physics Notes, Chemistry Notes, Past Papers, Model Papers Sri Lanka">
+    <meta name="author" content="InvoicePro Study Notes Portal">
+    
+    <!-- Open Graph for WhatsApp & Facebook Preview -->
+    <meta property="og:title" content="Study Notes & PDF Library - Free Download">
+    <meta property="og:description" content="Grades 1-13 ICT, Physics, Chemistry ඇතුළු සියලුම සටහන් නොමිලේ Download කරගන්න.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1000&auto=format&fit=crop">
+    <meta property="og:type" content="website">
+
+    <!-- FontAwesome Icons & Boxicons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="/marketplace.css">
 </head>
 <body>
-    <div class="marketplace-wrapper">
-        <header class="store-header" id="store-header">
-            <div class="header-content">
-                <div class="store-logo"><i class='bx bx-store'></i></div>
-                <div class="store-info">
-                    <h1 id="store-name">Loading Store...</h1>
-                    <p>Welcome to our official digital storefront</p>
+
+    <header>
+        <div class="top-nav">
+            <div style="font-weight: bold; font-size: 1.1rem; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-graduation-cap"></i> <span id="portal-logo-title">NotePortal</span>
+            </div>
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()">
+                <i id="themeIcon" class="fa-solid fa-moon"></i> Theme
+            </button>
+        </div>
+        <h1 id="store-name">Study Notes & PDF Library</h1>
+        <p>ඔබට අවශ්‍ය සියලුම පාඩම් සටහන් සහ PDF මෙතැනින් නොමිලේ Download කරගන්න (Grades 1 - 13)</p>
+    </header>
+
+    <div class="container">
+
+        <!-- Search & Category Filter Section -->
+        <div class="controls-card">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" onkeyup="filterNotes()" placeholder="සටහන, ශ්‍රේණිය හෝ විෂය නම ගහලා Search කරන්න...">
+            </div>
+            
+            <!-- Grade Filters (1 to 13) -->
+            <div style="margin-top: 5px;">
+                <div style="font-size: 0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">GRADE (ශ්‍රේණිය):</div>
+                <div class="grade-filters" id="gradeFilters">
+                    <button class="filter-btn active" onclick="filterGrade('all', this)">All Grades</button>
+                    <button class="filter-btn" onclick="filterGrade('1', this)">Grade 1</button>
+                    <button class="filter-btn" onclick="filterGrade('2', this)">Grade 2</button>
+                    <button class="filter-btn" onclick="filterGrade('3', this)">Grade 3</button>
+                    <button class="filter-btn" onclick="filterGrade('4', this)">Grade 4</button>
+                    <button class="filter-btn" onclick="filterGrade('5', this)">Grade 5</button>
+                    <button class="filter-btn" onclick="filterGrade('6', this)">Grade 6</button>
+                    <button class="filter-btn" onclick="filterGrade('7', this)">Grade 7</button>
+                    <button class="filter-btn" onclick="filterGrade('8', this)">Grade 8</button>
+                    <button class="filter-btn" onclick="filterGrade('9', this)">Grade 9</button>
+                    <button class="filter-btn" onclick="filterGrade('10', this)">Grade 10</button>
+                    <button class="filter-btn" onclick="filterGrade('11', this)">Grade 11</button>
+                    <button class="filter-btn" onclick="filterGrade('12', this)">Grade 12</button>
+                    <button class="filter-btn" onclick="filterGrade('13', this)">Grade 13</button>
                 </div>
             </div>
-        </header>
-        
-        <main class="store-main">
-            <div class="search-bar-container">
-                <div class="search-bar">
-                    <i class='bx bx-search'></i>
-                    <input type="text" id="search-input" placeholder="Search for products...">
+
+            <!-- Subject & Type Filters -->
+            <div style="margin-top: 5px;">
+                <div style="font-size: 0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">CATEGORY (වර්ගය / විෂය):</div>
+                <div class="category-filters">
+                    <button class="filter-btn active" onclick="filterCategory('all', this)">All Notes</button>
+                    <button class="filter-btn" onclick="filterCategory('Short Notes', this)">Short Notes</button>
+                    <button class="filter-btn" onclick="filterCategory('Paper (PDF)', this)">Papers (PDF)</button>
+                    <button class="filter-btn" onclick="filterCategory('Extracurricular Notes', this)">Extracurricular Notes</button>
+                    <button class="filter-btn" onclick="filterCategory('ict', this)">ICT</button>
+                    <button class="filter-btn" onclick="filterCategory('physics', this)">Physics</button>
+                    <button class="filter-btn" onclick="filterCategory('chemistry', this)">Chemistry</button>
+                    <button class="filter-btn" onclick="filterCategory('maths', this)">Combined Maths</button>
                 </div>
             </div>
-            
-            <div class="products-grid" id="products-grid">
-                <!-- Products via JS -->
-            </div>
-            
-            <div id="no-products" style="display:none; text-align:center; padding: 40px; color: var(--text-muted);">
-                <i class='bx bx-box' style="font-size: 48px; margin-bottom: 16px; opacity:0.5;"></i>
-                <h2>No products found</h2>
-                <p>Try adjusting your search</p>
-            </div>
-            
-            <div id="loading-spinner" style="text-align:center; padding: 60px;">
-                <div class="spinner"></div>
-                <p style="margin-top: 16px; color: var(--text-muted); font-weight: 500;">Loading Products...</p>
-            </div>
-        </main>
-        
-        <footer class="store-footer">
-            <p>Powered by <strong>InvoicePro</strong> Marketplace</p>
-        </footer>
+        </div>
+
+        <!-- Action Buttons (WhatsApp Group & Note Request) -->
+        <div class="action-bar">
+            <a href="https://chat.whatsapp.com/YOUR_GROUP_LINK" target="_blank" class="btn-whatsapp" id="whatsappLink">
+                <i class="fa-brands fa-whatsapp fa-lg"></i> Join WhatsApp Channel / Group
+            </a>
+            <button class="btn-request-note" onclick="openRequestModal()">
+                <i class="fa-solid fa-file-circle-plus fa-lg"></i> Request a Note (සටහනක් ඉල්ලන්න)
+            </button>
+        </div>
+
+        <!-- MONETAG BANNER AD (TOP) -->
+        <div class="ad-space">
+            <span><i class="fa-solid fa-rectangle-ad"></i> [ Monetag Top Banner Ad Space ]</span>
+        </div>
+
+        <!-- Dynamic Materials Cards Grid -->
+        <div class="grid" id="notesGrid">
+            <!-- Dynamically populated via marketplace.js -->
+        </div>
+
+        <div id="noNotesMsg" style="display:none; text-align:center; padding: 40px 20px; background: var(--card-bg); border-radius: 12px; margin: 20px 0; border: 1px solid var(--border-color);">
+            <i class="fa-solid fa-folder-open" style="font-size: 48px; color: var(--text-muted); margin-bottom: 12px;"></i>
+            <h3>සටහන් කිසිවක් හමු නොවීය (No Notes Found)</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">වෙනත් ශ්‍රේණියක් (Grade 1 - 13) හෝ විෂයක් තෝරා නැවත උත්සාහ කරන්න.</p>
+        </div>
+
+        <!-- MONETAG BANNER AD (BOTTOM) -->
+        <div class="ad-space">
+            <span><i class="fa-solid fa-rectangle-ad"></i> [ Monetag Bottom Banner Ad Space ]</span>
+        </div>
+
     </div>
+
+    <!-- Countdown Modal -->
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3>ඔබගේ File එක සූදානම් වෙමින් පවතී...</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">කරුණාකර තත්පර කිහිපයක් රැඳී සිටින්න.</p>
+            <div class="timer-circle" id="timerDisplay">5</div>
+            <p style="font-size: 0.8rem; color: var(--primary-color);"><i class="fa-solid fa-spinner fa-spin"></i> Direct link එක නව Tab එකක Open විය.</p>
+        </div>
+    </div>
+
+    <!-- Note Request Modal -->
+    <div id="requestModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="margin-bottom: 15px;"><i class="fa-solid fa-pen-to-square"></i> සටහනක් ඉල්ලන්න</h3>
+            <form onsubmit="handleFormSubmit(event)">
+                <div class="form-group">
+                    <label>ඔබගේ නම</label>
+                    <input type="text" id="reqName" required placeholder="උදා: කසුන් පෙරේරා">
+                </div>
+                <div class="form-group">
+                    <label>ශ්‍රේණිය (Grade 1 - 13), විෂය සහ පාඩම</label>
+                    <input type="text" id="reqSubject" required placeholder="උදා: Grade 10 - Physics - ධාරා విద్యుතය">
+                </div>
+                <div class="form-group">
+                    <label>අමතර විස්තර (අවශ්‍ය නම්)</label>
+                    <textarea id="reqDetails" rows="3" placeholder="ඔබට අවශ්‍ය Past Papers ද, Theory Notes ද?"></textarea>
+                </div>
+                <button type="submit" class="form-submit">Submit Request</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Note View / Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content" style="max-width:550px; text-align:left;">
+            <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <span id="prevBadge" class="badge">Grade 10</span>
+            <h3 id="prevTitle" style="margin: 10px 0 5px 0;">Note Title</h3>
+            <p id="prevSubject" style="color: var(--primary-color); font-weight:600; font-size:0.9rem; margin-bottom:12px;"></p>
+            <div id="prevContent" style="background:var(--bg-color); padding:15px; border-radius:8px; font-size:0.9rem; max-height:250px; overflow-y:auto; margin-bottom:15px; white-space:pre-wrap; border:1px solid var(--border-color);"></div>
+            <button id="prevDlBtn" class="btn-download">
+                <i class="fa-solid fa-file-arrow-down"></i> Download Attachment / PDF
+            </button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Educational Notes Portal (Grades 1 - 13). All rights reserved.</p>
+    </footer>
+
     <script src="/marketplace.js"></script>
 </body>
 </html>

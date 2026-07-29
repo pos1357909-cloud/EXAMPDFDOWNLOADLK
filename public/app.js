@@ -226,6 +226,7 @@ function setupNavigation() {
             if(target === 'pos-view') loadPOS();
             if(target === 'invoices-view') loadInvoices();
             if(target === 'reports-view') loadReports();
+            if(target === 'materials-view') loadMaterials();
             if(target === 'profile-view') loadProfile();
             if(target === 'admin-view') loadAdminUsers();
         });
@@ -258,6 +259,10 @@ function setupModals() {
     document.getElementById('btn-close-invoice-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-admin-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-category-modal').addEventListener('click', hideModal);
+    document.getElementById('btn-close-material-modal')?.addEventListener('click', hideModal);
+
+    // Add Educational Material
+    document.getElementById('btn-add-material')?.addEventListener('click', showAddMaterialModal);
     
     // Add product
     document.getElementById('btn-add-product').addEventListener('click', () => {
@@ -1405,5 +1410,215 @@ async function deleteCategory(id) {
             await fetchAuth(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
             loadCategoryManagement();
         } catch (err) { console.error(err); }
+    }
+}
+
+// ==== EDUCATIONAL MATERIALS MANAGEMENT (Grades 1 - 13) ====
+let materialsList = [];
+let materialFileDataBase64 = '';
+let materialFileName = '';
+
+function showAddMaterialModal() {
+    document.getElementById('material-form').reset();
+    document.getElementById('material-id').value = '';
+    materialFileDataBase64 = '';
+    materialFileName = '';
+    const statusEl = document.getElementById('material-file-status');
+    if (statusEl) statusEl.textContent = '';
+    document.getElementById('material-modal-title').textContent = 'Add Educational Material';
+    showModal(document.getElementById('material-modal'));
+}
+
+// File input handler for Base64 encoding
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'material-file-input') {
+        const file = e.target.files[0];
+        if (file) {
+            materialFileName = file.name;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                materialFileDataBase64 = event.target.result;
+                const statusEl = document.getElementById('material-file-status');
+                if (statusEl) statusEl.textContent = `✓ Attached: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+});
+
+// Search & Filter listeners
+document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'material-search') renderMaterials();
+});
+document.addEventListener('change', (e) => {
+    if (e.target && (e.target.id === 'material-grade-filter' || e.target.id === 'material-type-filter')) renderMaterials();
+});
+
+// Material form submission
+document.addEventListener('submit', async (e) => {
+    if (e.target && e.target.id === 'material-form') {
+        e.preventDefault();
+        const id = document.getElementById('material-id').value;
+        const title = document.getElementById('material-title').value;
+        const grade = document.getElementById('material-grade').value;
+        const type = document.getElementById('material-type').value;
+        const subject = document.getElementById('material-subject').value;
+        const description = document.getElementById('material-description').value;
+
+        const payload = {
+            title,
+            grade,
+            material_type: type,
+            subject,
+            description,
+            file_data: materialFileDataBase64,
+            file_name: materialFileName
+        };
+
+        try {
+            let res;
+            if (id) {
+                res = await fetchAuth(`${API_BASE}/materials/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                res = await fetchAuth(`${API_BASE}/materials`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+            
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to save educational material');
+            }
+
+            hideModal();
+            loadMaterials();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+});
+
+async function loadMaterials() {
+    try {
+        const res = await fetchAuth(`${API_BASE}/materials`);
+        if (!res.ok) throw new Error('Failed to fetch materials');
+        materialsList = await res.json();
+        renderMaterials();
+    } catch (err) {
+        console.error('Error loading educational materials:', err);
+    }
+}
+
+function renderMaterials() {
+    const grid = document.getElementById('materials-grid');
+    const emptyEl = document.getElementById('materials-empty');
+    if (!grid) return;
+
+    const searchInput = document.getElementById('material-search');
+    const gradeSelect = document.getElementById('material-grade-filter');
+    const typeSelect = document.getElementById('material-type-filter');
+
+    const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const gradeFilter = gradeSelect ? gradeSelect.value : 'all';
+    const typeFilter = typeSelect ? typeSelect.value : 'all';
+
+    const filtered = materialsList.filter(m => {
+        const matchesSearch = !search || m.title.toLowerCase().includes(search) || m.subject.toLowerCase().includes(search) || (m.description && m.description.toLowerCase().includes(search));
+        const matchesGrade = gradeFilter === 'all' || m.grade == gradeFilter;
+        const matchesType = typeFilter === 'all' || m.material_type === typeFilter;
+        return matchesSearch && matchesGrade && matchesType;
+    });
+
+    grid.innerHTML = '';
+    if (filtered.length === 0) {
+        if (emptyEl) emptyEl.style.display = 'block';
+    } else {
+        if (emptyEl) emptyEl.style.display = 'none';
+        filtered.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style = 'display:flex; flex-direction:column; justify-content:space-between; padding:20px; border-radius:12px; border:1px solid var(--border); background:var(--card-bg); shadow:0 2px 8px rgba(0,0,0,0.05);';
+
+            let typeIcon = 'bx-file';
+            let badgeClass = 'background:#e0e7ff; color:#3730a3;';
+            if (m.material_type === 'Paper (PDF)') {
+                typeIcon = 'bx-file-find';
+                badgeClass = 'background:#fee2e2; color:#991b1b;';
+            } else if (m.material_type === 'Extracurricular Notes') {
+                typeIcon = 'bx-notepad';
+                badgeClass = 'background:#fef3c7; color:#92400e;';
+            }
+
+            card.innerHTML = `
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <span style="font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; ${badgeClass}">
+                            <i class="bx ${typeIcon}"></i> Grade ${m.grade}
+                        </span>
+                        <span style="font-size:12px; font-weight:600; color:var(--text-muted);">
+                            <i class="bx bx-download"></i> ${m.download_count || 0} downloads
+                        </span>
+                    </div>
+                    <h3 style="font-size:16px; font-weight:700; color:var(--text-main); margin-bottom:6px;">${m.title}</h3>
+                    <p style="font-size:13px; font-weight:600; color:var(--primary); margin-bottom:8px;">
+                        <i class="bx bx-book-bookmark"></i> ${m.subject} • ${m.material_type}
+                    </p>
+                    <p style="font-size:13px; color:var(--text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:12px;">
+                        ${m.description || 'No description provided.'}
+                    </p>
+                    ${m.file_name ? `<div style="font-size:12px; color:var(--text-main); background:var(--secondary); padding:6px 10px; border-radius:6px; margin-bottom:12px;"><i class="bx bx-paperclip"></i> ${m.file_name}</div>` : ''}
+                </div>
+                <div style="display:flex; gap:8px; margin-top:10px; border-top:1px solid var(--border); padding-top:12px;">
+                    <button class="btn btn-outline btn-sm" onclick="editMaterial('${m.id}')" style="flex:1;"><i class="bx bx-edit"></i> Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteMaterial('${m.id}')"><i class="bx bx-trash"></i> Delete</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+}
+
+function editMaterial(id) {
+    const item = materialsList.find(m => m.id === id);
+    if (!item) return;
+
+    document.getElementById('material-id').value = item.id;
+    document.getElementById('material-title').value = item.title;
+    document.getElementById('material-grade').value = item.grade;
+    document.getElementById('material-type').value = item.material_type;
+    document.getElementById('material-subject').value = item.subject;
+    document.getElementById('material-description').value = item.description || '';
+    
+    materialFileDataBase64 = item.file_data || '';
+    materialFileName = item.file_name || '';
+    
+    const statusEl = document.getElementById('material-file-status');
+    if (statusEl) {
+        if (materialFileName) {
+            statusEl.textContent = `✓ Current File: ${materialFileName}`;
+        } else {
+            statusEl.textContent = '';
+        }
+    }
+
+    document.getElementById('material-modal-title').textContent = 'Edit Educational Material';
+    showModal(document.getElementById('material-modal'));
+}
+
+async function deleteMaterial(id) {
+    if (confirm('Are you sure you want to delete this educational material?')) {
+        try {
+            const res = await fetchAuth(`${API_BASE}/materials/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete material');
+            loadMaterials();
+        } catch (err) {
+            alert(err.message);
+        }
     }
 }
