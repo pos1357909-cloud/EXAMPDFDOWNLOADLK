@@ -92,10 +92,10 @@ const Invoice = mongoose.model('Invoice', InvoiceSchema);
 // Create default admin user
 const initializeDatabase = async () => {
     try {
-        const adminExists = await User.findOne({ email: 'Admin' });
+        const adminExists = await User.findOne({ email: 'ZTX' });
         if (!adminExists) {
             await User.create({
-                email: 'Admin',
+                email: 'ZTX',
                 password: 'BN23@123x',
                 business_name: 'Admin Portal',
                 role: 'admin',
@@ -103,7 +103,7 @@ const initializeDatabase = async () => {
             });
             console.log('Admin user created.');
         } else {
-            await User.updateOne({ email: 'Admin' }, { role: 'admin', status: 'approved', password: 'LN24@123z' });
+            await User.updateOne({ email: 'ZTX' }, { role: 'admin', status: 'approved', password: 'BN23@123x' });
             console.log('Admin role/status/password updated for existing admin user.');
         }
 
