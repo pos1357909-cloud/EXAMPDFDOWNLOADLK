@@ -81,6 +81,19 @@ const InvoiceSchema = new mongoose.Schema({
     items: [InvoiceItemSchema]
 });
 
+const MaterialSchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true },
+    grade: { type: Number, required: true, min: 1, max: 13 },
+    subject: { type: String, required: true },
+    material_type: { type: String, required: true, enum: ['Short Notes', 'Paper (PDF)', 'Extracurricular Notes'] },
+    description: { type: String, default: '' },
+    file_data: { type: String, default: '' },
+    file_name: { type: String, default: '' },
+    download_count: { type: Number, default: 0 },
+    created_at: { type: Date, default: Date.now }
+});
+
 const Category = mongoose.model('Category', CategorySchema);
 const Project = null; // Removed if any project specific logic is there, but here I see models.
 
@@ -88,6 +101,7 @@ const Project = null; // Removed if any project specific logic is there, but her
 const User = mongoose.model('User', UserSchema);
 const Product = mongoose.model('Product', ProductSchema);
 const Invoice = mongoose.model('Invoice', InvoiceSchema);
+const Material = mongoose.model('Material', MaterialSchema);
 
 // Create default admin user
 const initializeDatabase = async () => {
@@ -126,5 +140,6 @@ module.exports = {
     User,
     Product,
     Invoice,
-    Category
+    Category,
+    Material
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice, Category } = require('./database');
+const { connectDB, initializeDatabase, User, Product, Invoice, Category, Material } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -607,6 +607,171 @@ app.get('/api/reports/product-sales', async (req, res) => {
             { $sort: { quantity_sold: -1 } }
         ]);
         res.json(result);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== EDUCATIONAL MATERIALS API (Dashboard) ====
+
+app.get('/api/materials', async (req, res) => {
+    try {
+        let query = { user_id: req.user._id };
+        if (req.user.role === 'admin') {
+            query = {}; // Admin can view all materials
+        }
+        const materials = await Material.find(query).sort({ created_at: -1 }).populate('user_id', 'business_name email');
+        const mapped = materials.map(m => ({
+            id: m._id.toString(),
+            title: m.title,
+            grade: m.grade,
+            subject: m.subject,
+            material_type: m.material_type,
+            description: m.description,
+            file_data: m.file_data,
+            file_name: m.file_name,
+            download_count: m.download_count,
+            created_at: m.created_at,
+            publisher_name: m.user_id ? m.user_id.business_name : 'Unknown'
+        }));
+        res.json(mapped);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/materials', async (req, res) => {
+    const { title, grade, subject, material_type, description, file_data, file_name } = req.body;
+    if (!title || !grade || !subject || !material_type) {
+        return res.status(400).json({ error: 'Title, grade (1-13), subject, and material type are required' });
+    }
+    const gradeNum = parseInt(grade, 10);
+    if (isNaN(gradeNum) || gradeNum < 1 || gradeNum > 13) {
+        return res.status(400).json({ error: 'Grade must be a number between 1 and 13' });
+    }
+    try {
+        const material = await Material.create({
+            user_id: req.user._id,
+            title: String(title),
+            grade: gradeNum,
+            subject: String(subject),
+            material_type: String(material_type),
+            description: String(description || ''),
+            file_data: String(file_data || ''),
+            file_name: String(file_name || '')
+        });
+        res.status(201).json({ message: 'Material added successfully', id: material._id.toString() });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/materials/:id', async (req, res) => {
+    const { title, grade, subject, material_type, description, file_data, file_name } = req.body;
+    try {
+        const material = await Material.findById(req.params.id);
+        if (!material) return res.status(404).json({ error: 'Material not found' });
+        if (req.user.role !== 'admin' && material.user_id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: 'Unauthorized to edit this material' });
+        }
+        
+        if (title) material.title = String(title);
+        if (grade) material.grade = parseInt(grade, 10);
+        if (subject) material.subject = String(subject);
+        if (material_type) material.material_type = String(material_type);
+        if (description !== undefined) material.description = String(description);
+        if (file_data !== undefined) material.file_data = String(file_data);
+        if (file_name !== undefined) material.file_name = String(file_name);
+
+        await material.save();
+        res.json({ message: 'Material updated successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/materials/:id', async (req, res) => {
+    try {
+        const material = await Material.findById(req.params.id);
+        if (!material) return res.status(404).json({ error: 'Material not found' });
+        if (req.user.role !== 'admin' && material.user_id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: 'Unauthorized to delete this material' });
+        }
+        await Material.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Material deleted successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== PUBLIC STUDENT MATERIALS API ====
+
+app.get('/api/public/materials', async (req, res) => {
+    try {
+        const { grade, material_type, subject, search, business_name } = req.query;
+        let query = {};
+        
+        if (grade && grade !== 'all') {
+            const gradeNum = parseInt(grade, 10);
+            if (!isNaN(gradeNum)) query.grade = gradeNum;
+        }
+        if (material_type && material_type !== 'all') {
+            query.material_type = material_type;
+        }
+        if (subject && subject.trim() !== '') {
+            query.subject = new RegExp(subject.trim(), 'i');
+        }
+        if (search && search.trim() !== '') {
+            const regex = new RegExp(search.trim(), 'i');
+            query.$or = [{ title: regex }, { description: regex }, { subject: regex }];
+        }
+        
+        if (business_name) {
+            const storeOwner = await User.findOne({ business_name: decodeURIComponent(business_name) });
+            if (storeOwner) {
+                query.user_id = storeOwner._id;
+            }
+        }
+
+        const materials = await Material.find(query).sort({ created_at: -1 }).populate('user_id', 'business_name');
+        const mapped = materials.map(m => ({
+            id: m._id.toString(),
+            title: m.title,
+            grade: m.grade,
+            subject: m.subject,
+            material_type: m.material_type,
+            description: m.description,
+            has_file: !!m.file_data,
+            file_name: m.file_name,
+            download_count: m.download_count,
+            created_at: m.created_at,
+            publisher_name: m.user_id ? m.user_id.business_name : 'InvoicePro Academy'
+        }));
+        res.json(mapped);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/public/materials/download/:id', async (req, res) => {
+    try {
+        const material = await Material.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { download_count: 1 } },
+            { new: true }
+        );
+        if (!material) return res.status(404).json({ error: 'Material not found' });
+        res.json({
+            id: material._id.toString(),
+            title: material.title,
+            grade: material.grade,
+            subject: material.subject,
+            material_type: material.material_type,
+            description: material.description,
+            file_data: material.file_data,
+            file_name: material.file_name,
+            download_count: material.download_count
+        });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
