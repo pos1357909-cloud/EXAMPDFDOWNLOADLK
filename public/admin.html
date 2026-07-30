@@ -953,14 +953,14 @@
         }
         tbody.innerHTML = pdfs.map((p, i) => `
             <tr>
-                <td><strong>${p.title}</strong></td>
-                <td><span class="badge-pill info">${p.category || '—'}</span></td>
-                <td><span class="badge-pill purple">Gr. ${p.grade?.replace('Grade ', '') || '—'}</span></td>
+                <td><strong>${escHtml(p.title)}</strong></td>
+                <td><span class="badge-pill info">${escHtml(p.category || '—')}</span></td>
+                <td><span class="badge-pill purple">Gr. ${escHtml(p.grade?.replace('Grade ', '') || '—')}</span></td>
                 <td>${getTypeBadge(p.material_type)}</td>
                 <td><i class="fa-solid fa-download" style="color:var(--text-muted);margin-right:5px;"></i>${p.downloads ?? 0}</td>
                 <td>
                     <button class="btn-action edit" onclick="openEditModal('${p._id}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn-action delete" onclick="deletePdf('${p._id}', '${escHtml(p.title)}')" style="margin-left:4px;"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-action delete" onclick="deletePdf('${p._id}')" style="margin-left:4px;"><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>
         `).join('');
@@ -973,14 +973,14 @@
             return;
         }
         tbody.innerHTML = pdfs.map((p, i) => `
-            <tr data-grade="${p.grade?.replace('Grade ', '') || ''}" data-type="${p.material_type || ''}" data-title="${(p.title || '').toLowerCase()}" data-subject="${(p.category || '').toLowerCase()}">
+            <tr data-grade="${escHtml(p.grade?.replace('Grade ', '') || '')}" data-type="${escHtml(p.material_type || '')}" data-title="${escHtml((p.title || '').toLowerCase())}" data-subject="${escHtml((p.category || '').toLowerCase())}">
                 <td style="color:var(--text-muted);font-size:12px;">${String(i + 1).padStart(2, '0')}</td>
                 <td>
                     <div style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(p.title)}">${escHtml(p.title)}</div>
                     ${p.description ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${escHtml(p.description.slice(0, 60))}${p.description.length > 60 ? '...' : ''}</div>` : ''}
                 </td>
                 <td><span class="badge-pill info">${escHtml(p.category || '—')}</span></td>
-                <td><span class="badge-pill purple">Gr. ${p.grade?.replace('Grade ', '') || '—'}</span></td>
+                <td><span class="badge-pill purple">Gr. ${escHtml(p.grade?.replace('Grade ', '') || '—')}</span></td>
                 <td>${getTypeBadge(p.material_type)}</td>
                 <td>
                     <i class="fa-solid fa-download" style="color:var(--text-muted);margin-right:5px;"></i>
@@ -991,7 +991,7 @@
                 </td>
                 <td style="white-space:nowrap;">
                     <button class="btn-action edit" onclick="openEditModal('${p._id}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn-action delete" onclick="deletePdf('${p._id}', '${escHtml(p.title)}')" style="margin-left:4px;"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-action delete" onclick="deletePdf('${p._id}')" style="margin-left:4px;"><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>
         `).join('');
@@ -1098,7 +1098,9 @@
         }
     }
 
-    async function deletePdf(id, title) {
+    async function deletePdf(id) {
+        const pdf = allPdfs.find(p => p._id === id);
+        const title = pdf ? pdf.title : 'this item';
         if (!confirm(`Delete "${title}"?\n\nThis action cannot be undone.`)) return;
         try {
             const res = await fetch(`${API_URL}/pdfs/${id}`, { method: 'DELETE', headers: authHeader() });

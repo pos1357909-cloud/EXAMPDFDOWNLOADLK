@@ -261,36 +261,40 @@ function setupNavigation() {
 }
 
 function setupModals() {
-    document.getElementById('btn-close-modal').addEventListener('click', hideModal);
-    document.getElementById('btn-close-invoice-modal').addEventListener('click', hideModal);
-    document.getElementById('btn-close-admin-modal').addEventListener('click', hideModal);
-    document.getElementById('btn-close-category-modal').addEventListener('click', hideModal);
+    document.getElementById('btn-close-modal')?.addEventListener('click', hideModal);
+    document.getElementById('btn-close-invoice-modal')?.addEventListener('click', hideModal);
+    document.getElementById('btn-close-admin-modal')?.addEventListener('click', hideModal);
+    document.getElementById('btn-close-category-modal')?.addEventListener('click', hideModal);
     document.getElementById('btn-close-material-modal')?.addEventListener('click', hideModal);
 
     // Add Educational Material
     document.getElementById('btn-add-material')?.addEventListener('click', showAddMaterialModal);
     
     // Add product
-    document.getElementById('btn-add-product').addEventListener('click', () => {
-        document.getElementById('product-form').reset();
+    document.getElementById('btn-add-product')?.addEventListener('click', () => {
+        document.getElementById('product-form')?.reset();
         document.getElementById('product-id').value = '';
         currentProductImageBase64 = null;
-        document.getElementById('product-image-preview').innerHTML = '<span style="color:var(--text-muted);font-size:12px;">+ Add Image</span>';
-        document.getElementById('product-modal-title').textContent = 'Add Product';
+        const prev = document.getElementById('product-image-preview');
+        if (prev) prev.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">+ Add Image</span>';
+        const title = document.getElementById('product-modal-title');
+        if (title) title.textContent = 'Add Product';
         loadCategoriesForSelect();
-        showModal(productModal);
+        if (productModal) showModal(productModal);
     });
 
     // Manage Categories
-    document.getElementById('btn-manage-categories').addEventListener('click', () => {
+    document.getElementById('btn-manage-categories')?.addEventListener('click', () => {
         loadCategoryManagement();
-        showModal(categoryModal);
+        if (categoryModal) showModal(categoryModal);
     });
 
     // Category form submission
-    document.getElementById('category-form').addEventListener('submit', async (e) => {
+    document.getElementById('category-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const name = document.getElementById('category-name').value;
+        const nameEl = document.getElementById('category-name');
+        if (!nameEl) return;
+        const name = nameEl.value;
         try {
             const res = await fetchAuth(`${API_BASE}/categories`, {
                 method: 'POST',
@@ -305,7 +309,7 @@ function setupModals() {
     });
 
     // Handle Image Selection
-    document.getElementById('product-image').addEventListener('change', function(e) {
+    document.getElementById('product-image')?.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         
@@ -338,7 +342,8 @@ function setupModals() {
 
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 currentProductImageBase64 = dataUrl;
-                document.getElementById('product-image-preview').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+                const prev = document.getElementById('product-image-preview');
+                if (prev) prev.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
             }
             img.src = event.target.result;
         }
@@ -346,7 +351,7 @@ function setupModals() {
     });
 
     // Handle Product Form
-    document.getElementById('product-form').addEventListener('submit', async (e) => {
+    document.getElementById('product-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('product-id').value;
         const name = document.getElementById('product-name').value;
@@ -383,20 +388,24 @@ function setupModals() {
     });
 
     // Print Receipt logic
-    document.getElementById('btn-print-receipt').addEventListener('click', () => {
+    document.getElementById('btn-print-receipt')?.addEventListener('click', () => {
         window.print();
     });
     
     // Admin User Details logic
     document.getElementById('btn-admin-add-user')?.addEventListener('click', () => {
-        document.getElementById('admin-user-form').reset();
-        document.getElementById('admin-user-id').value = '';
-        document.getElementById('admin-password').required = true;
-        showModal(document.getElementById('admin-user-modal'));
+        const form = document.getElementById('admin-user-form');
+        if (form) form.reset();
+        const idEl = document.getElementById('admin-user-id');
+        if (idEl) idEl.value = '';
+        const passEl = document.getElementById('admin-password');
+        if (passEl) passEl.required = true;
+        const modal = document.getElementById('admin-user-modal');
+        if (modal) showModal(modal);
     });
 
     // Admin User Edit Form
-    document.getElementById('admin-user-form').addEventListener('submit', async (e) => {
+    document.getElementById('admin-user-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('admin-user-id').value;
         const business_name = document.getElementById('admin-business-name').value;
