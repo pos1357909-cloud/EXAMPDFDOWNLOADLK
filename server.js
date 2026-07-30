@@ -930,7 +930,7 @@ app.delete('/api/reviews/:id', async (req, res) => {
 // ==== SEO SETTINGS API ====
 app.get('/api/seo', async (req, res) => {
     try {
-        let seo = await SeoSettings.findById('global');
+        let seo = await SeoSettings.findOne({ _id: 'global' });
         if (!seo) seo = { metaTitle: 'EduPortal Sri Lanka', metaDescription: '', metaKeywords: '', ogImage: '', robots: 'index, follow' };
         res.json(seo);
     } catch (err) {
@@ -1048,6 +1048,35 @@ app.get('/api/activity-logs', async (req, res) => {
     }
 });
 
+// ==== ADMIN DASHBOARD STATS API ====
+app.get('/api/admin/dashboard-stats', adminMiddleware, async (req, res) => {
+    try {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
+        const newUsersToday = await User.countDocuments({ role: { $ne: 'admin' }, createdAt: { $gte: new Date(todayStr) } });
+        const totalMaterials = await Material.countDocuments({});
+        const totalPdfs = await Material.countDocuments({ material_type: 'Paper (PDF)' });
+        const totalAnnouncements = await Announcement.countDocuments({});
+        const totalMessages = await Message.countDocuments({});
+        const pendingMessages = await Message.countDocuments({ status: 'unread' });
+        const publishedMaterials = await Material.countDocuments({ status: 'published' });
+        const pendingMaterials = await Material.countDocuments({ status: 'pending' });
+        const draftMaterials = await Material.countDocuments({ status: 'draft' });
+        const hiddenMaterials = await Material.countDocuments({ status: 'hidden' });
+        const downloadsAgg = await Material.aggregate([{ $group: { _id: null, total: { $sum: '$download_count' } } }]);
+        const totalDownloads = downloadsAgg.length > 0 ? downloadsAgg[0].total : 0;
+        res.json({
+            totalUsers, newUsersToday, totalMaterials, totalPdfs,
+            totalAnnouncements, totalMessages, pendingMessages,
+            publishedMaterials, pendingMaterials, draftMaterials, hiddenMaterials,
+            totalDownloads
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // ==== TAXONOMY API (SUBJECTS & GRADES) ====
 app.get('/api/taxonomy/subjects', async (req, res) => {
     try {
@@ -1124,7 +1153,7 @@ app.get('/api/analytics/overview', async (req, res) => {
 
 // ==== MARKETPLACE API ====
 
-// ==== EDUA ADMIN PORTAL ROUTES ====
+// Admin route helper — requires admin role (already applied via adminMiddleware)
 
 // Admin Login (standalone - no Bearer token needed, uses username/password)
 app.post('/api/admin/login', async (req, res) => {
@@ -1276,10 +1305,10 @@ app.delete('/api/admin/pdfs/:id', async (req, res) => {
     }
 });
 
-// Admin: Get Ad Settings (public read, auth write)
+// Admin: Get Ad Settings
 app.get('/api/admin/ads', async (req, res) => {
     try {
-        let settings = await AdSettings.findById('global');
+        let settings = await AdSettings.findOne({ _id: 'global' });
         if (!settings) settings = { monetagDirectLink: '', topBannerCode: '', bottomBannerCode: '' };
         res.json(settings);
     } catch (err) {
@@ -1288,20 +1317,21 @@ app.get('/api/admin/ads', async (req, res) => {
 });
 
 // Admin: Save Ad Settings
-app.put('/api/admin/ads', async (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+app.put('/api/admin/ads', adminMiddleware, async (req, res) => {
     try {
-        const token = authHeader.split(' ')[1];
-        const adminUser = await User.findOne({ _id: token, role: 'admin' });
-        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
-
         const { monetagDirectLink, topBannerCode, bottomBannerCode } = req.body;
         await AdSettings.findOneAndUpdate(
             { _id: 'global' },
             { monetagDirectLink, topBannerCode, bottomBannerCode, updatedAt: new Date() },
             { upsert: true, new: true }
         );
+        // Log action
+        await ActivityLog.create({
+            user_id: req.user._id.toString(),
+            user_email: req.user.email,
+            action: 'Updated Ad Settings',
+            details: `Monetag link: ${monetagDirectLink ? 'set' : 'cleared'}`
+        });
         res.json({ message: 'Ad settings saved successfully' });
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -1309,15 +1339,9 @@ app.put('/api/admin/ads', async (req, res) => {
 });
 
 // Admin: Get Site Settings
-app.get('/api/admin/site-settings', async (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+app.get('/api/admin/site-settings', adminMiddleware, async (req, res) => {
     try {
-        const token = authHeader.split(' ')[1];
-        const adminUser = await User.findOne({ _id: token, role: 'admin' });
-        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
-
-        let settings = await SiteSettings.findById('global');
+        let settings = await SiteSettings.findOne({ _id: 'global' });
         if (!settings) settings = { siteName: 'EduPortal Sri Lanka', contactWhatsApp: '' };
         res.json(settings);
     } catch (err) {
@@ -1326,20 +1350,21 @@ app.get('/api/admin/site-settings', async (req, res) => {
 });
 
 // Admin: Save Site Settings
-app.put('/api/admin/site-settings', async (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+app.put('/api/admin/site-settings', adminMiddleware, async (req, res) => {
     try {
-        const token = authHeader.split(' ')[1];
-        const adminUser = await User.findOne({ _id: token, role: 'admin' });
-        if (!adminUser) return res.status(403).json({ error: 'Forbidden' });
-
         const { siteName, contactWhatsApp } = req.body;
         await SiteSettings.findOneAndUpdate(
             { _id: 'global' },
             { siteName, contactWhatsApp, updatedAt: new Date() },
             { upsert: true, new: true }
         );
+        // Log action
+        await ActivityLog.create({
+            user_id: req.user._id.toString(),
+            user_email: req.user.email,
+            action: 'Updated Site Settings',
+            details: `Site name set to: ${siteName}`
+        });
         res.json({ message: 'Site settings saved successfully' });
     } catch (err) {
         return res.status(500).json({ error: err.message });

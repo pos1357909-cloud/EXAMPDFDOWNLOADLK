@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>InvoicePro - Retail POS</title>
+    <title>EduPortal Admin Dashboard</title>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <!-- Boxicons for modern icons -->
@@ -545,6 +545,8 @@
                         <h3 style="font-size:18px; color:var(--text-main);">No Educational Materials Added</h3>
                         <p style="color:var(--text-muted); font-size:14px;">Click "Add New Material" to upload PDF Papers, Short Notes, or Extracurricular Notes for Grades 1 - 13.</p>
                     </div>
+                </section>
+
                 <!-- PDF Library View -->
                 <section id="pdf-library-view" class="view">
                     <div class="card" style="margin-bottom:24px;">
@@ -988,7 +990,7 @@
         </main>
 
         <!-- Modal overlay for generic use -->
-        <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-overlay" id="modal-overlay" style="overflow-y:auto;">
             <!-- Add/Edit Material Modal -->
             <div class="modal" id="material-modal">
                 <div class="modal-header">
@@ -1251,6 +1253,104 @@
                     <button class="btn btn-primary btn-block" id="btn-print-receipt">Print Receipt</button>
                 </div>
             </div>
+        </div>
+
+            <!-- Announcement Modal -->
+            <div class="modal" id="announcement-modal">
+                <div class="modal-header">
+                    <h3>New Announcement</h3>
+                    <button class="close-btn" id="btn-close-announcement-modal"><i class="bx bx-x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="announcement-form">
+                        <div class="form-group">
+                            <label>Announcement Title *</label>
+                            <input type="text" id="ann-title" class="form-control" required placeholder="e.g. A/L Exam Papers Now Available!" />
+                        </div>
+                        <div class="form-group">
+                            <label>Message Content *</label>
+                            <textarea id="ann-content" class="form-control" rows="4" required placeholder="Write your announcement message here..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Target Grade</label>
+                            <select id="ann-grade" class="form-control">
+                                <option value="all">All Grades</option>
+                                <option value="1">Grade 1</option><option value="2">Grade 2</option>
+                                <option value="3">Grade 3</option><option value="4">Grade 4</option>
+                                <option value="5">Grade 5</option><option value="6">Grade 6</option>
+                                <option value="7">Grade 7</option><option value="8">Grade 8</option>
+                                <option value="9">Grade 9</option><option value="10">Grade 10</option>
+                                <option value="11">Grade 11</option><option value="12">Grade 12</option>
+                                <option value="13">Grade 13</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="bx bx-send"></i> Publish Announcement</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Subject Modal -->
+            <div class="modal" id="subject-modal">
+                <div class="modal-header">
+                    <h3>Add New Subject</h3>
+                    <button class="close-btn" id="btn-close-subject-modal"><i class="bx bx-x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="subject-form">
+                        <div class="form-group">
+                            <label>Subject Name *</label>
+                            <input type="text" id="subject-name" class="form-control" required placeholder="e.g. Physics" />
+                        </div>
+                        <div class="form-group">
+                            <label>Subject Code</label>
+                            <input type="text" id="subject-code" class="form-control" placeholder="e.g. PHY" />
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="subject-category" class="form-control">
+                                <option value="Science">Science</option>
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Language">Language</option>
+                                <option value="Commerce">Commerce</option>
+                                <option value="Arts">Arts</option>
+                                <option value="General">General</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="bx bx-plus"></i> Add Subject</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Media Upload Modal -->
+            <div class="modal" id="media-modal">
+                <div class="modal-header">
+                    <h3>Upload Media Item</h3>
+                    <button class="close-btn" id="btn-close-media-modal"><i class="bx bx-x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="media-form">
+                        <div class="form-group">
+                            <label>Media Name *</label>
+                            <input type="text" id="media-name" class="form-control" required placeholder="e.g. Homepage Banner" />
+                        </div>
+                        <div class="form-group">
+                            <label>Media URL *</label>
+                            <input type="url" id="media-url" class="form-control" required placeholder="https://..." />
+                            <small style="color:var(--text-muted);">Paste the public URL of your image or file.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="media-type" class="form-control">
+                                <option value="image">Image</option>
+                                <option value="video">Video</option>
+                                <option value="document">Document</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="bx bx-upload"></i> Save Media</button>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div> <!-- End of app-wrapper -->
 
