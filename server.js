@@ -708,6 +708,17 @@ app.delete('/api/materials/:id', async (req, res) => {
 
 // ==== PUBLIC STUDENT MATERIALS API ====
 
+// Public site settings (no auth needed — read-only for marketplace)
+app.get('/api/public/site-settings', async (req, res) => {
+    try {
+        let settings = await SiteSettings.findById('global');
+        if (!settings) settings = { siteName: 'EduPortal Sri Lanka', contactWhatsApp: '' };
+        res.json({ siteName: settings.siteName, contactWhatsApp: settings.contactWhatsApp });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/public/materials', async (req, res) => {
     try {
         const { grade, material_type, subject, search, business_name } = req.query;
@@ -736,19 +747,25 @@ app.get('/api/public/materials', async (req, res) => {
         }
 
         const materials = await Material.find(query).sort({ created_at: -1 }).populate('user_id', 'business_name');
-        const mapped = materials.map(m => ({
-            id: m._id.toString(),
-            title: m.title,
-            grade: m.grade,
-            subject: m.subject,
-            material_type: m.material_type,
-            description: m.description,
-            has_file: !!m.file_data,
-            file_name: m.file_name,
-            download_count: m.download_count,
-            created_at: m.created_at,
-            publisher_name: m.user_id ? m.user_id.business_name : 'InvoicePro Academy'
-        }));
+        const mapped = materials.map(m => {
+            const fd = m.file_data || '';
+            const isDriveUrl = fd.startsWith('http://') || fd.startsWith('https://');
+            return {
+                id: m._id.toString(),
+                title: m.title,
+                grade: m.grade,
+                subject: m.subject,
+                material_type: m.material_type,
+                description: m.description,
+                has_file: !!fd,
+                is_drive_url: isDriveUrl,
+                drive_url: isDriveUrl ? fd : null,
+                file_name: m.file_name,
+                download_count: m.download_count,
+                created_at: m.created_at,
+                publisher_name: m.user_id ? m.user_id.business_name : 'EduPortal Academy'
+            };
+        });
         res.json(mapped);
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -763,6 +780,8 @@ app.post('/api/public/materials/download/:id', async (req, res) => {
             { new: true }
         );
         if (!material) return res.status(404).json({ error: 'Material not found' });
+        const fd = material.file_data || '';
+        const isDriveUrl = fd.startsWith('http://') || fd.startsWith('https://');
         res.json({
             id: material._id.toString(),
             title: material.title,
@@ -770,7 +789,10 @@ app.post('/api/public/materials/download/:id', async (req, res) => {
             subject: material.subject,
             material_type: material.material_type,
             description: material.description,
-            file_data: material.file_data,
+            // Only send base64 data for embedded files; for URLs send the URL separately
+            file_data: isDriveUrl ? null : (fd || null),
+            is_drive_url: isDriveUrl,
+            drive_url: isDriveUrl ? fd : null,
             file_name: material.file_name,
             download_count: material.download_count
         });

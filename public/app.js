@@ -214,44 +214,44 @@ function setupNavigation() {
             link.classList.add('active');
             
             const target = link.getAttribute('data-target');
-            views.forEach(view => view.classList.remove('active'));
-            document.getElementById(target).classList.add('active');
+            const targetEl = document.getElementById(target);
+            if (targetEl) {
+                views.forEach(view => view.classList.remove('active'));
+                targetEl.classList.add('active');
+            }
             
             pageTitle.textContent = link.querySelector('.link-name').textContent;
             currentTab = target;
             
             // Load specific view data
             if(target === 'dashboard-view') loadDashboard();
-            if(target === 'inventory-view') loadInventory();
-            if(target === 'pos-view') loadPOS();
-            if(target === 'invoices-view') loadInvoices();
-            if(target === 'reports-view') loadReports();
             if(target === 'materials-view') loadMaterials();
             if(target === 'profile-view') loadProfile();
-            if(target === 'admin-view') loadAdminUsers();
         });
     });
     
-    // ==== MARKETPLACE ====
-    const btnMarketplace = document.getElementById('btn-create-marketplace');
-    if (btnMarketplace) {
-        btnMarketplace.addEventListener('click', async () => {
-            try {
-                const res = await fetchAuth(`${API_BASE}/marketplace/enable`, { method: 'POST' });
-                if (res.ok) {
-                    const domain = window.location.origin;
-                    const url = `${domain}/${encodeURIComponent(currentBusiness)}`;
-                    // Open the marketplace URL in a new window immediately
-                    window.open(url, '_blank');
-                } else {
-                    alert('Failed to enable marketplace. Make sure you have restarted your server.');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Error enabling marketplace. Did you restart the server?');
+    // ==== MARKETPLACE BUTTONS ====
+    const launchMarketplace = async () => {
+        try {
+            const res = await fetchAuth(`${API_BASE}/marketplace/enable`, { method: 'POST' });
+            if (res.ok) {
+                const domain = window.location.origin;
+                const url = `${domain}/${encodeURIComponent(currentBusiness)}`;
+                window.open(url, '_blank');
+            } else {
+                alert('Failed to enable marketplace. Make sure your server is running.');
             }
-        });
-    }
+        } catch (err) {
+            console.error(err);
+            alert('Error launching marketplace.');
+        }
+    };
+
+    const btnMarketplace = document.getElementById('btn-create-marketplace');
+    if (btnMarketplace) btnMarketplace.addEventListener('click', launchMarketplace);
+
+    const btnDashMarketplace = document.getElementById('btn-dash-open-marketplace');
+    if (btnDashMarketplace) btnDashMarketplace.addEventListener('click', launchMarketplace);
 }
 
 function setupModals() {
@@ -582,41 +582,20 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
 async function loadDashboard() {
     if (!authToken) return;
     try {
-        const res = await fetchAuth(`${API_BASE}/dashboard`);
-        const stats = await res.json();
-        
-        document.getElementById('dash-bills-today').textContent = stats.totalBillsToday;
-        document.getElementById('dash-bills-month').textContent = stats.totalBillsMonth;
-        document.getElementById('dash-income-today').textContent = formatCurrency(stats.dailyIncome);
-        document.getElementById('dash-income-month').textContent = formatCurrency(stats.monthlyIncome);
-        if (document.getElementById('dash-delivery-today')) {
-            document.getElementById('dash-delivery-today').textContent = formatCurrency(stats.dailyDelivery);
-        }
-        document.getElementById('dash-total-products').textContent = stats.totalProducts;
-        document.getElementById('dash-low-stock').textContent = stats.lowStockProducts;
+        const res = await fetchAuth(`${API_BASE}/materials`);
+        if (res.ok) {
+            const list = await res.json();
+            const totalCount = list.length;
+            const totalDownloads = list.reduce((sum, item) => sum + (item.download_count || 0), 0);
 
-        // Load low stock table
-        const resAlerts = await fetchAuth(`${API_BASE}/dashboard/low-stock`);
-        const alerts = await resAlerts.json();
-        const tbody = document.querySelector('#low-stock-table tbody');
-        tbody.innerHTML = '';
-        
-        alerts.forEach(item => {
-            const tr = document.createElement('tr');
-            let nameHTML = `<td>${item.name}</td>`;
-            if (currentRole === 'admin') {
-                nameHTML = `<td>${item.name} <div style="font-size:11px;color:var(--primary);margin-top:2px;">[${item.owner_name}]</div></td>`;
-            }
-            
-            tr.innerHTML = `
-                ${nameHTML}
-                <td class="text-danger">${item.quantity}</td>
-                <td>${formatCurrency(item.price)}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+            const matEl = document.getElementById('dash-total-materials');
+            if (matEl) matEl.textContent = totalCount;
+
+            const dlEl = document.getElementById('dash-total-downloads');
+            if (dlEl) dlEl.textContent = totalDownloads;
+        }
     } catch (err) {
-        console.error(err);
+        console.error('Error loading dashboard stats:', err);
     }
 }
 
@@ -1425,6 +1404,8 @@ function showAddMaterialModal() {
     materialFileName = '';
     const statusEl = document.getElementById('material-file-status');
     if (statusEl) statusEl.textContent = '';
+    const driveUrlEl = document.getElementById('material-drive-url');
+    if (driveUrlEl) driveUrlEl.value = '';
     document.getElementById('material-modal-title').textContent = 'Add Educational Material';
     showModal(document.getElementById('material-modal'));
 }
@@ -1476,6 +1457,22 @@ document.addEventListener('submit', async (e) => {
         };
 
         try {
+            // Drive URL takes priority over base64 file upload
+            const driveUrlEl = document.getElementById('material-drive-url');
+            const driveUrl = driveUrlEl ? driveUrlEl.value.trim() : '';
+            const finalFileData = driveUrl ? driveUrl : materialFileDataBase64;
+            const finalFileName = driveUrl ? title : materialFileName;
+
+            const payload = {
+                title,
+                grade,
+                material_type: type,
+                subject,
+                description,
+                file_data: finalFileData,
+                file_name: finalFileName
+            };
+
             let res;
             if (id) {
                 res = await fetchAuth(`${API_BASE}/materials/${id}`, {
@@ -1592,15 +1589,22 @@ function editMaterial(id) {
     document.getElementById('material-title').value = item.title;
     document.getElementById('material-grade').value = item.grade;
     document.getElementById('material-type').value = item.material_type;
-    document.getElementById('material-subject').value = item.subject;
+    document.getElementById('material-subject').value = item.subject || '';
     document.getElementById('material-description').value = item.description || '';
     
-    materialFileDataBase64 = item.file_data || '';
-    materialFileName = item.file_name || '';
+    // Populate Drive URL or base64 file
+    const driveUrlEl = document.getElementById('material-drive-url');
+    const fd = item.file_data || '';
+    const isDriveUrl = fd.startsWith('http://') || fd.startsWith('https://');
+    if (driveUrlEl) driveUrlEl.value = isDriveUrl ? fd : '';
+    materialFileDataBase64 = isDriveUrl ? '' : (fd || '');
+    materialFileName = isDriveUrl ? '' : (item.file_name || '');
     
     const statusEl = document.getElementById('material-file-status');
     if (statusEl) {
-        if (materialFileName) {
+        if (isDriveUrl) {
+            statusEl.textContent = `✓ Drive Link: ${fd.slice(0, 60)}...`;
+        } else if (materialFileName) {
             statusEl.textContent = `✓ Current File: ${materialFileName}`;
         } else {
             statusEl.textContent = '';
