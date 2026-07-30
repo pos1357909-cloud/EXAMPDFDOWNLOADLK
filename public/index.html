@@ -545,6 +545,444 @@
                         <h3 style="font-size:18px; color:var(--text-main);">No Educational Materials Added</h3>
                         <p style="color:var(--text-muted); font-size:14px;">Click "Add New Material" to upload PDF Papers, Short Notes, or Extracurricular Notes for Grades 1 - 13.</p>
                     </div>
+                <!-- PDF Library View -->
+                <section id="pdf-library-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h2 style="font-size:20px; font-weight:700;"><i class="bx bxs-file-pdf" style="color:#ef4444;"></i> PDF Library (Past Papers & Model Exams)</h2>
+                                <p style="color:var(--text-muted); font-size:14px;">Dedicated library for PDF past papers, model exams, and term test papers.</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="document.getElementById('btn-add-material').click()"><i class="bx bx-plus"></i> Upload PDF Paper</button>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Subject</th>
+                                        <th>Grade</th>
+                                        <th>Downloads</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pdf-library-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Marketplace View -->
+                <section id="marketplace-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-store" style="color:#0ea5e9;"></i> Marketplace Management</h2>
+                                <p style="color:var(--text-muted); font-size:14px;">Manage student marketplace access, publisher permissions, and store settings.</p>
+                            </div>
+                            <button class="btn btn-outline" id="btn-open-market-live"><i class="bx bx-globe"></i> Open Live Portal</button>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Store / Publisher</th>
+                                        <th>Email</th>
+                                        <th>WhatsApp</th>
+                                        <th>Materials</th>
+                                        <th>Downloads</th>
+                                        <th>Status</th>
+                                        <th>Marketplace Access</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="marketplace-users-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Categories View -->
+                <section id="categories-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-category"></i> Categories Management</h2>
+                                <p style="color:var(--text-muted); font-size:14px;">Organize study materials by categories (Short Notes, Exam Papers, Extracurricular).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                        <div class="card" style="padding:20px;">
+                            <h3 style="font-size:16px; font-weight:700; margin-bottom:8px;">Short Notes</h3>
+                            <p style="color:var(--text-muted); font-size:13px;">Quick revision summaries and unit notes for Grades 1 - 13.</p>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <h3 style="font-size:16px; font-weight:700; margin-bottom:8px;">PDF Exam Papers</h3>
+                            <p style="color:var(--text-muted); font-size:13px;">Term test papers, O/L & A/L past papers with marking schemes.</p>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <h3 style="font-size:16px; font-weight:700; margin-bottom:8px;">Extracurricular Notes</h3>
+                            <p style="color:var(--text-muted); font-size:13px;">General knowledge, language guides, and competition resources.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Subjects View -->
+                <section id="subjects-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-book-bookmark"></i> Subjects Management</h2>
+                                <p style="color:var(--text-muted); font-size:14px;">Manage all 16 curriculum subjects available across Grades 1 - 13.</p>
+                            </div>
+                            <button class="btn btn-primary" id="btn-add-subject-modal"><i class="bx bx-plus"></i> Add Subject</button>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject Name</th>
+                                        <th>Code</th>
+                                        <th>Category</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="subjects-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Grades View -->
+                <section id="grades-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-badge-check"></i> Grades Management (Grades 1 - 13)</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Grade levels for Primary, Secondary (O/L), and Senior Secondary (A/L).</p>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;" id="grades-grid-container">
+                        <!-- Loaded via JS -->
+                    </div>
+                </section>
+
+                <!-- Users View -->
+                <section id="users-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-user-voice"></i> Registered Users & Publishers</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Approve or manage user accounts and student marketplace privileges.</p>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>User / Business</th>
+                                        <th>Email</th>
+                                        <th>WhatsApp</th>
+                                        <th>Status</th>
+                                        <th>Marketplace Access</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-view-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Downloads View -->
+                <section id="downloads-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-cloud-download"></i> Downloads Analytics & Log</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Monitor all student PDF and short note download counts in real-time.</p>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Material Title</th>
+                                        <th>Subject</th>
+                                        <th>Grade</th>
+                                        <th>Total Downloads</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="downloads-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Analytics View -->
+                <section id="analytics-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-bar-chart-alt-2"></i> Website & Content Analytics</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Comprehensive breakdown of student views, downloads, and popular grades.</p>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+                        <div class="card" style="padding:20px;">
+                            <h3 style="font-size:15px; font-weight:700; margin-bottom:14px;"><i class="bx bx-star" style="color:#f59e0b;"></i> Downloads by Subject</h3>
+                            <div id="analytics-subjects-list">
+                                <!-- Loaded via JS -->
+                            </div>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <h3 style="font-size:15px; font-weight:700; margin-bottom:14px;"><i class="bx bx-badge-check" style="color:var(--primary);"></i> Downloads by Grade</h3>
+                            <div id="analytics-grades-list">
+                                <!-- Loaded via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Advertisements View -->
+                <section id="ads-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-dollar-circle" style="color:#f59e0b;"></i> Advertisements & Monetag Settings</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Configure Monetag Direct Link and HTML ad banners rendered on the student portal.</p>
+                    </div>
+                    <div class="card" style="padding:24px; max-width:800px;">
+                        <form id="ads-form">
+                            <div class="form-group">
+                                <label>Monetag Direct Link URL</label>
+                                <input type="url" id="ad-monetag-url" class="form-control" placeholder="https://..." />
+                                <small style="color:var(--text-muted);">Triggers when students click the Download button before receiving their file.</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Top Banner HTML/JS Code</label>
+                                <textarea id="ad-top-banner" class="form-control" rows="3" placeholder="<script>...</script>"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Bottom Banner HTML/JS Code</label>
+                                <textarea id="ad-bottom-banner" class="form-control" rows="3" placeholder="<script>...</script>"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="bx bx-save"></i> Save Ad Settings</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Announcements View -->
+                <section id="announcements-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-notification" style="color:#0ea5e9;"></i> Announcements Broadcast</h2>
+                                <p style="color:var(--text-muted); font-size:14px;">Publish site-wide updates and alerts visible to all students.</p>
+                            </div>
+                            <button class="btn btn-primary" id="btn-add-announcement-modal"><i class="bx bx-plus"></i> New Announcement</button>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Content</th>
+                                        <th>Target Grade</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="announcements-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Messages View -->
+                <section id="messages-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-envelope"></i> Contact Messages & Feedback</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">View student inquiries, feedback, and support requests.</p>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Subject</th>
+                                        <th>Message</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="messages-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reviews View -->
+                <section id="reviews-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-star" style="color:#f59e0b;"></i> Material Reviews & Ratings</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Moderate student feedback and ratings on study notes and PDF papers.</p>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Material</th>
+                                        <th>Rating</th>
+                                        <th>Comment</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reviews-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SEO Settings View -->
+                <section id="seo-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-search-alt"></i> SEO & Search Engine Settings</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Optimize Meta titles, descriptions, keywords, and OpenGraph tags for Google ranking.</p>
+                    </div>
+                    <div class="card" style="padding:24px; max-width:800px;">
+                        <form id="seo-form">
+                            <div class="form-group">
+                                <label>Meta Title</label>
+                                <input type="text" id="seo-title" class="form-control" />
+                            </div>
+                            <div class="form-group">
+                                <label>Meta Description</label>
+                                <textarea id="seo-description" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Meta Keywords</label>
+                                <input type="text" id="seo-keywords" class="form-control" placeholder="Education, Notes, PDF, Sri Lanka..." />
+                            </div>
+                            <div class="form-group">
+                                <label>Robots Directive</label>
+                                <input type="text" id="seo-robots" class="form-control" value="index, follow" />
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="bx bx-save"></i> Save SEO Settings</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Website Settings View -->
+                <section id="settings-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-cog"></i> Website & Portal Settings</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Configure portal branding name, contact WhatsApp number, and footer text.</p>
+                    </div>
+                    <div class="card" style="padding:24px; max-width:800px;">
+                        <form id="site-settings-form">
+                            <div class="form-group">
+                                <label>Portal Name</label>
+                                <input type="text" id="site-name-input" class="form-control" required />
+                            </div>
+                            <div class="form-group">
+                                <label>Contact WhatsApp Number</label>
+                                <input type="tel" id="site-whatsapp-input" class="form-control" placeholder="+94 77 123 4567" />
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="bx bx-save"></i> Save Website Settings</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Media Manager View -->
+                <section id="media-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-folder-open"></i> Media & File Manager</h2>
+                                <p style="color:var(--text-muted); font-size:14px;">Manage uploaded banners, covers, and promotional image assets.</p>
+                            </div>
+                            <button class="btn btn-primary" id="btn-add-media-modal"><i class="bx bx-upload"></i> Upload Media</button>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>URL</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="media-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Backup & Restore View -->
+                <section id="backup-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-data"></i> Database Backup & Restore</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Export full JSON backups of your materials or restore data from a previous backup file.</p>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+                        <div class="card" style="padding:24px;">
+                            <h3 style="font-size:16px; font-weight:700; margin-bottom:8px;"><i class="bx bx-download" style="color:#10b981;"></i> Export Backup</h3>
+                            <p style="color:var(--text-muted); font-size:14px; margin-bottom:16px;">Download a full JSON file containing all materials, settings, and announcements.</p>
+                            <button class="btn btn-primary" id="btn-export-backup"><i class="bx bx-download"></i> Download Backup JSON</button>
+                        </div>
+                        <div class="card" style="padding:24px;">
+                            <h3 style="font-size:16px; font-weight:700; margin-bottom:8px;"><i class="bx bx-upload" style="color:var(--primary);"></i> Restore Backup</h3>
+                            <p style="color:var(--text-muted); font-size:14px; margin-bottom:16px;">Upload a previously saved `.json` backup file to restore study materials.</p>
+                            <input type="file" id="backup-file-input" accept=".json" style="display:none;" />
+                            <button class="btn btn-outline" onclick="document.getElementById('backup-file-input').click()"><i class="bx bx-upload"></i> Choose Backup File</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Activity Logs View -->
+                <section id="activity-view" class="view">
+                    <div class="card" style="margin-bottom:24px;">
+                        <h2 style="font-size:20px; font-weight:700;"><i class="bx bx-history"></i> Admin Activity Logs</h2>
+                        <p style="color:var(--text-muted); font-size:14px;">Audit log of administrative actions, material creation, and setting changes.</p>
+                    </div>
+                    <div class="card" style="padding:20px;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>User / Admin</th>
+                                        <th>Action</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activity-table-body">
+                                    <!-- Loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </section>
             </div>
         </main>

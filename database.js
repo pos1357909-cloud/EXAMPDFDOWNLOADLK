@@ -91,7 +91,77 @@ const MaterialSchema = new mongoose.Schema({
     file_data: { type: String, default: '' },
     file_name: { type: String, default: '' },
     download_count: { type: Number, default: 0 },
+    view_count: { type: Number, default: 0 },
+    status: { type: String, default: 'published', enum: ['published', 'draft', 'pending', 'hidden'] },
+    is_featured: { type: Boolean, default: false },
+    author_name: { type: String, default: 'EduPortal' },
     created_at: { type: Date, default: Date.now }
+});
+
+const AnnouncementSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    target_grade: { type: String, default: 'all' },
+    status: { type: String, default: 'active', enum: ['active', 'archived'] },
+    created_at: { type: Date, default: Date.now }
+});
+
+const MessageSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    subject: { type: String, default: 'General Inquiry' },
+    message: { type: String, required: true },
+    status: { type: String, default: 'unread', enum: ['unread', 'read', 'replied'] },
+    created_at: { type: Date, default: Date.now }
+});
+
+const ReviewSchema = new mongoose.Schema({
+    material_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Material' },
+    material_title: { type: String, default: 'General Review' },
+    user_name: { type: String, required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, required: true },
+    status: { type: String, default: 'approved', enum: ['approved', 'pending', 'hidden'] },
+    created_at: { type: Date, default: Date.now }
+});
+
+const ActivityLogSchema = new mongoose.Schema({
+    user_id: { type: String, default: 'System' },
+    user_email: { type: String, default: 'admin@eduportal.lk' },
+    action: { type: String, required: true },
+    details: { type: String, default: '' },
+    created_at: { type: Date, default: Date.now }
+});
+
+const MediaItemSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    file_type: { type: String, default: 'image' },
+    file_size: { type: String, default: '0 KB' },
+    created_at: { type: Date, default: Date.now }
+});
+
+const SeoSettingsSchema = new mongoose.Schema({
+    _id: { type: String, default: 'global' },
+    metaTitle: { type: String, default: 'EduPortal Sri Lanka | Grades 1-13 Notes & PDF Papers' },
+    metaDescription: { type: String, default: 'Download free educational short notes, term papers, and model answers for Grades 1 to 13 in Sri Lanka.' },
+    metaKeywords: { type: String, default: 'Education, Notes, PDF, Sri Lanka, Grade 11, Grade 13, O/L, A/L, Past Papers' },
+    ogImage: { type: String, default: '' },
+    robots: { type: String, default: 'index, follow' },
+    updatedAt: { type: Date, default: Date.now }
+});
+
+const SubjectSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    code: { type: String, default: '' },
+    category: { type: String, default: 'General' },
+    created_at: { type: Date, default: Date.now }
+});
+
+const GradeSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    level: { type: Number, required: true, min: 1, max: 13 },
+    stream: { type: String, default: 'General' }
 });
 
 const AdSettingsSchema = new mongoose.Schema({
@@ -106,21 +176,29 @@ const SiteSettingsSchema = new mongoose.Schema({
     _id: { type: String, default: 'global' },
     siteName: { type: String, default: 'EduPortal Sri Lanka' },
     contactWhatsApp: { type: String, default: '' },
+    logoUrl: { type: String, default: '' },
+    footerText: { type: String, default: '© 2026 EduPortal Sri Lanka. All Rights Reserved.' },
     updatedAt: { type: Date, default: Date.now }
 });
-
-const Category = mongoose.model('Category', CategorySchema);
-const Project = null; // Removed if any project specific logic is there, but here I see models.
 
 // -- MODELS --
 const User = mongoose.model('User', UserSchema);
 const Product = mongoose.model('Product', ProductSchema);
 const Invoice = mongoose.model('Invoice', InvoiceSchema);
+const Category = mongoose.model('Category', CategorySchema);
 const Material = mongoose.model('Material', MaterialSchema);
+const Announcement = mongoose.model('Announcement', AnnouncementSchema);
+const Message = mongoose.model('Message', MessageSchema);
+const Review = mongoose.model('Review', ReviewSchema);
+const ActivityLog = mongoose.model('ActivityLog', ActivityLogSchema);
+const MediaItem = mongoose.model('MediaItem', MediaItemSchema);
+const SeoSettings = mongoose.model('SeoSettings', SeoSettingsSchema);
+const Subject = mongoose.model('Subject', SubjectSchema);
+const Grade = mongoose.model('Grade', GradeSchema);
 const AdSettings = mongoose.model('AdSettings', AdSettingsSchema);
 const SiteSettings = mongoose.model('SiteSettings', SiteSettingsSchema);
 
-// Create default admin user
+// Create default admin user and default subjects/announcements
 const initializeDatabase = async () => {
     try {
         const adminExists = await User.findOne({ email: 'ZTX' });
@@ -134,20 +212,33 @@ const initializeDatabase = async () => {
             });
             console.log('Admin user created.');
         } else {
-            await User.updateOne({ email: 'ZTX' }, { role: 'admin', status: 'approved', password: 'BN23@123x' });
+            await User.updateOne({ email: 'ZTX', role: 'admin' }, { status: 'approved', password: 'BN23@123x' });
             console.log('Admin role/status/password updated for existing admin user.');
         }
 
-        // Ensure legacy users without a status are grandfathered in as 'approved'
-        const legacyUpdate = await User.updateMany(
-            { status: { $exists: false } },
-            { $set: { status: 'approved' } }
-        );
-        if (legacyUpdate.modifiedCount > 0) {
-            console.log(`Grandfathered ${legacyUpdate.modifiedCount} legacy users to 'approved' status.`);
+        // Ensure default announcement if none exist
+        const annCount = await Announcement.countDocuments();
+        if (annCount === 0) {
+            await Announcement.create({
+                title: 'Welcome to EduPortal Sri Lanka!',
+                content: 'Access short notes, past papers, and study resources for Grades 1 to 13.',
+                target_grade: 'all',
+                status: 'active'
+            });
+        }
+
+        // Ensure default activity log
+        const logCount = await ActivityLog.countDocuments();
+        if (logCount === 0) {
+            await ActivityLog.create({
+                user_id: 'System',
+                user_email: 'admin@eduportal.lk',
+                action: 'System Initialized',
+                details: 'Educational Notes & Marketplace platform ready.'
+            });
         }
     } catch (err) {
-        console.error('Error initializing default user:', err.message);
+        console.error('Error initializing default data:', err.message);
     }
 };
 
@@ -159,6 +250,14 @@ module.exports = {
     Invoice,
     Category,
     Material,
+    Announcement,
+    Message,
+    Review,
+    ActivityLog,
+    MediaItem,
+    SeoSettings,
+    Subject,
+    Grade,
     AdSettings,
     SiteSettings
 };

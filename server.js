@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice, Category, Material, AdSettings, SiteSettings } = require('./database');
+const { 
+    connectDB, initializeDatabase, User, Product, Invoice, Category, Material, 
+    Announcement, Message, Review, ActivityLog, MediaItem, SeoSettings, Subject, Grade, 
+    AdSettings, SiteSettings 
+} = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -795,6 +799,323 @@ app.post('/api/public/materials/download/:id', async (req, res) => {
             drive_url: isDriveUrl ? fd : null,
             file_name: material.file_name,
             download_count: material.download_count
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// Record public view count
+app.post('/api/public/materials/view/:id', async (req, res) => {
+    try {
+        const material = await Material.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { view_count: 1 } },
+            { new: true }
+        );
+        res.json({ success: true, view_count: material ? material.view_count : 0 });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== ANNOUNCEMENTS API ====
+app.get('/api/announcements', async (req, res) => {
+    try {
+        const list = await Announcement.find({}).sort({ created_at: -1 });
+        res.json(list);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/announcements', async (req, res) => {
+    try {
+        const { title, content, target_grade } = req.body;
+        if (!title || !content) return res.status(400).json({ error: 'Title and content required' });
+        const item = await Announcement.create({ title, content, target_grade: target_grade || 'all' });
+        
+        // Log action
+        await ActivityLog.create({
+            user_id: req.user ? req.user._id.toString() : 'Admin',
+            user_email: req.user ? req.user.email : 'admin@eduportal.lk',
+            action: 'Created Announcement',
+            details: `Title: ${title}`
+        });
+
+        res.status(201).json(item);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/announcements/:id', async (req, res) => {
+    try {
+        await Announcement.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Announcement deleted successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== MESSAGES & CONTACT API ====
+app.get('/api/messages', async (req, res) => {
+    try {
+        const list = await Message.find({}).sort({ created_at: -1 });
+        res.json(list);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/public/messages', async (req, res) => {
+    try {
+        const { name, email, subject, message } = req.body;
+        if (!name || !email || !message) return res.status(400).json({ error: 'Name, email, and message are required.' });
+        const item = await Message.create({ name, email, subject, message });
+        res.status(201).json({ message: 'Message sent successfully!', id: item._id });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/messages/:id/read', async (req, res) => {
+    try {
+        const item = await Message.findByIdAndUpdate(req.params.id, { status: 'read' }, { new: true });
+        res.json(item);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/messages/:id', async (req, res) => {
+    try {
+        await Message.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Message deleted' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== REVIEWS API ====
+app.get('/api/reviews', async (req, res) => {
+    try {
+        const list = await Review.find({}).sort({ created_at: -1 });
+        res.json(list);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/public/reviews', async (req, res) => {
+    try {
+        const { material_id, material_title, user_name, rating, comment } = req.body;
+        if (!user_name || !rating || !comment) return res.status(400).json({ error: 'Name, rating, and comment are required.' });
+        const item = await Review.create({ material_id, material_title, user_name, rating, comment });
+        res.status(201).json({ message: 'Review submitted successfully!', id: item._id });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/reviews/:id', async (req, res) => {
+    try {
+        await Review.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Review deleted' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== SEO SETTINGS API ====
+app.get('/api/seo', async (req, res) => {
+    try {
+        let seo = await SeoSettings.findById('global');
+        if (!seo) seo = { metaTitle: 'EduPortal Sri Lanka', metaDescription: '', metaKeywords: '', ogImage: '', robots: 'index, follow' };
+        res.json(seo);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/seo', async (req, res) => {
+    try {
+        const { metaTitle, metaDescription, metaKeywords, ogImage, robots } = req.body;
+        const seo = await SeoSettings.findOneAndUpdate(
+            { _id: 'global' },
+            { metaTitle, metaDescription, metaKeywords, ogImage, robots, updatedAt: new Date() },
+            { upsert: true, new: true }
+        );
+        res.json({ message: 'SEO settings updated successfully', seo });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== MEDIA MANAGER API ====
+app.get('/api/media', async (req, res) => {
+    try {
+        const list = await MediaItem.find({}).sort({ created_at: -1 });
+        res.json(list);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/media', async (req, res) => {
+    try {
+        const { name, url, file_type, file_size } = req.body;
+        if (!name || !url) return res.status(400).json({ error: 'Name and URL are required.' });
+        const item = await MediaItem.create({ name, url, file_type: file_type || 'image', file_size: file_size || '0 KB' });
+        res.status(201).json(item);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/media/:id', async (req, res) => {
+    try {
+        await MediaItem.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Media item deleted' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== BACKUP & RESTORE API ====
+app.get('/api/backup/export', async (req, res) => {
+    try {
+        const materials = await Material.find({});
+        const users = await User.find({}).select('-password');
+        const announcements = await Announcement.find({});
+        const adSettings = await AdSettings.findById('global');
+        const siteSettings = await SiteSettings.findById('global');
+        const seoSettings = await SeoSettings.findById('global');
+
+        const backupData = {
+            version: '2.0',
+            exported_at: new Date().toISOString(),
+            materials,
+            users,
+            announcements,
+            adSettings,
+            siteSettings,
+            seoSettings
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=eduportal-backup-${Date.now()}.json`);
+        res.send(JSON.stringify(backupData, null, 2));
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/backup/import', async (req, res) => {
+    try {
+        const { materials } = req.body;
+        if (!Array.isArray(materials)) return res.status(400).json({ error: 'Invalid backup format. Expected array of materials.' });
+        
+        let importedCount = 0;
+        for (const item of materials) {
+            if (item.title && item.grade && item.subject) {
+                await Material.create({
+                    user_id: req.user ? req.user._id : null,
+                    title: item.title,
+                    grade: item.grade,
+                    subject: item.subject,
+                    material_type: item.material_type || 'Paper (PDF)',
+                    description: item.description || '',
+                    file_data: item.file_data || '',
+                    file_name: item.file_name || item.title
+                });
+                importedCount++;
+            }
+        }
+        res.json({ message: `Successfully restored ${importedCount} materials!` });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== ACTIVITY LOGS API ====
+app.get('/api/activity-logs', async (req, res) => {
+    try {
+        const logs = await ActivityLog.find({}).sort({ created_at: -1 }).limit(100);
+        res.json(logs);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== TAXONOMY API (SUBJECTS & GRADES) ====
+app.get('/api/taxonomy/subjects', async (req, res) => {
+    try {
+        const subjects = await Subject.find({}).sort({ name: 1 });
+        res.json(subjects);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/taxonomy/subjects', async (req, res) => {
+    try {
+        const { name, code, category } = req.body;
+        if (!name) return res.status(400).json({ error: 'Subject name is required.' });
+        const item = await Subject.create({ name, code: code || '', category: category || 'General' });
+        res.status(201).json(item);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/taxonomy/subjects/:id', async (req, res) => {
+    try {
+        await Subject.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Subject deleted' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== ANALYTICS OVERVIEW API ====
+app.get('/api/analytics/overview', async (req, res) => {
+    try {
+        const totalMaterials = await Material.countDocuments({});
+        const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
+        const totalAnnouncements = await Announcement.countDocuments({});
+        const totalMessages = await Message.countDocuments({});
+        const totalReviews = await Review.countDocuments({});
+
+        const downloadsAgg = await Material.aggregate([{ $group: { _id: null, total: { $sum: '$download_count' } } }]);
+        const totalDownloads = downloadsAgg.length > 0 ? downloadsAgg[0].total : 0;
+
+        const viewsAgg = await Material.aggregate([{ $group: { _id: null, total: { $sum: '$view_count' } } }]);
+        const totalViews = viewsAgg.length > 0 ? viewsAgg[0].total : 0;
+
+        // Breakdown by Grade
+        const gradeBreakdown = await Material.aggregate([
+            { $group: { _id: '$grade', count: { $sum: 1 }, totalDownloads: { $sum: '$download_count' } } },
+            { $sort: { _id: 1 } }
+        ]);
+
+        // Breakdown by Subject
+        const subjectBreakdown = await Material.aggregate([
+            { $group: { _id: '$subject', count: { $sum: 1 }, totalDownloads: { $sum: '$download_count' } } },
+            { $sort: { count: -1 } },
+            { $limit: 8 }
+        ]);
+
+        res.json({
+            totalMaterials,
+            totalUsers,
+            totalAnnouncements,
+            totalMessages,
+            totalReviews,
+            totalDownloads,
+            totalViews,
+            gradeBreakdown,
+            subjectBreakdown
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });
